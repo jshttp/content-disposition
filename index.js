@@ -51,8 +51,12 @@ var textRegExp = /^[\u0020-\u007e\u0080-\u00ff]+$/
  */
 
 function contentDisposition(filename) {
+  if (filename === undefined) {
+    return 'attachment'
+  }
+
   if (typeof filename !== 'string') {
-    throw new TypeError('argument filename is required')
+    throw new TypeError('argument filename must be a string')
   }
 
   // restrict to file base name

@@ -2,12 +2,18 @@
 var assert = require('assert')
 var contentDisposition = require('..')
 
+describe('contentDisposition()', function () {
+  it('should create an attachment header', function () {
+    assert.equal(contentDisposition(), 'attachment')
+  })
+})
+
 describe('contentDisposition(filename)', function () {
-  it('should require a filename', function () {
-    assert.throws(contentDisposition.bind(), /argument filename is required/)
+  it('should require a string', function () {
+    assert.throws(contentDisposition.bind(null, 42), /argument filename.*string/)
   })
 
-  it('should create a header', function () {
+  it('should create a header with file name', function () {
     assert.equal(contentDisposition('plans.pdf'), 'attachment; filename="plans.pdf"')
   })
 

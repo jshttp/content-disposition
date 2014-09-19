@@ -20,9 +20,10 @@ $ npm install content-disposition
 var contentDisposition = require('content-disposition')
 ```
 
-### contentDisposition(filename)
+### contentDisposition([filename])
 
-Create an attachment `Content-Disposition` header value using the given file name.
+Create an attachment `Content-Disposition` header value using the given file name,
+if supplied.
 
 ```js
 res.setHeader('Content-Disposition', contentDisposition('∫ maths.pdf'))
