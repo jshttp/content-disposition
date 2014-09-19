@@ -41,7 +41,7 @@ describe('contentDisposition(filename)', function () {
     })
 
     it('should encode special characters', function () {
-      assert.equal(contentDisposition('«\'*%».pdf'), 'attachment; filename="?\'*%?.pdf"; filename*=UTF-8\'\'%C2%AB%27%2A%25%C2%BB.pdf')
+      assert.equal(contentDisposition('«\'*%()».pdf'), 'attachment; filename="?\'*%()?.pdf"; filename*=UTF-8\'\'%C2%AB%27%2A%25%28%29%C2%BB.pdf')
     })
   })
 })

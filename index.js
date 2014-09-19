@@ -17,10 +17,10 @@ module.exports = contentDisposition
 var basename = require('path').basename
 
 /**
- * RegExp to match non attr-char not handled by encodeURI.
+ * RegExp to match non attr-char, *after* encodeURIComponent (i.e. not including "%")
  */
 
-var encodeUriAttrCharRegExp = /[*']/g
+var encodeUriAttrCharRegExp = /[\x00-\x20"'\(\)*,\/:;<=>?@\[\\\]\{\}\x7f]/g
 
 /**
  * RegExp to match non-US-ASCII characters.
@@ -123,7 +123,7 @@ function ustring(val) {
   var str = String(val)
 
   // percent encode as UTF-8
-  var encoded = encodeURI(str)
+  var encoded = encodeURIComponent(str)
     .replace(encodeUriAttrCharRegExp, pencode)
 
   return 'UTF-8\'\'' + encoded
