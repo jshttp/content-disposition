@@ -1,7 +1,7 @@
 {
   "name": "content-disposition",
   "description": "Create an attachment Content-Disposition header",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "contributors": [
     "Douglas Christopher Wilson <doug@somethingdoug.com>"
   ],
