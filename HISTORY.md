@@ -1,3 +1,8 @@
+unreleased
+==========
+
+  * Fix periodic invalid Unicode filename header
+
 0.1.1 / 2014-09-19
 ==================
 

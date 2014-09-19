@@ -40,6 +40,11 @@ describe('contentDisposition(filename)', function () {
       assert.equal(contentDisposition('планы.pdf'), 'attachment; filename="?????.pdf"; filename*=UTF-8\'\'%D0%BF%D0%BB%D0%B0%D0%BD%D1%8B.pdf')
     })
 
+    it('should include filename fallback', function () {
+      assert.equal(contentDisposition('«bye».pdf'), 'attachment; filename="?bye?.pdf"; filename*=UTF-8\'\'%C2%ABbye%C2%BB.pdf')
+      assert.equal(contentDisposition('«hi».pdf'), 'attachment; filename="?hi?.pdf"; filename*=UTF-8\'\'%C2%ABhi%C2%BB.pdf')
+    })
+
     it('should encode special characters', function () {
       assert.equal(contentDisposition('«\'*%()».pdf'), 'attachment; filename="?\'*%()?.pdf"; filename*=UTF-8\'\'%C2%AB%27%2A%25%28%29%C2%BB.pdf')
     })

@@ -17,6 +17,12 @@ module.exports = contentDisposition
 var basename = require('path').basename
 
 /**
+ * RegExp to match US-ASCII string
+ */
+
+var asciiStringRegExp = /^[\x00-\x7f]*$/
+
+/**
  * RegExp to match non attr-char, *after* encodeURIComponent (i.e. not including "%")
  */
 
@@ -62,7 +68,7 @@ function contentDisposition(filename) {
   // restrict to file base name
   var name = basename(filename)
 
-  if (!nonAsciiRegExp.test(name)) {
+  if (asciiStringRegExp.test(name)) {
     // simple header
     // file name is always quoted and not a token for RFC 2616 compatibility
     return 'attachment; filename=' + qstring(name)
