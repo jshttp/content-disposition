@@ -1,6 +1,7 @@
 unreleased
 ==========
 
+  * Add `fallback` option
   * Add `type` option
 
 0.2.0 / 2014-09-19

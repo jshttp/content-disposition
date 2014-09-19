@@ -34,6 +34,25 @@ res.setHeader('Content-Disposition', contentDisposition('∫ maths.pdf'))
 
 `contentDisposition` accepts these properties in the options object.
 
+##### fallback
+
+If the `filename` option is outside US-ASCII, then the file name is actually
+stored in a supplemental field for clients that support Unicode file names and
+a US-ASCII version of the file name is automatically generated.
+
+This specifies the US-ASCII file name to override the automatic generation or
+disables the generation all together, defaults to `true`.
+
+  - A string will specify the US-ASCII file name to use in place of automatic
+    generation.
+  - `false` will disable including a US-ASCII file name and only include the
+    Unicode version (unless the file name is already US-ASCII).
+  - `true` will enable automatic generation if the file name is outside US-ASCII.
+
+If the `filename` option is US-ASCII and this option is specified and has a
+different value, then the `filename` option is encoded in the extended field
+and this set as the fallback field, even though they are both US-ASCII.
+
 ##### type
 
 Specifies the disposition type, defaults to `"attachment"`. This can also be

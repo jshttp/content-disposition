@@ -70,6 +70,7 @@ var tokenRegExp = /^[!#$%&'\*\+\-\.0-9A-Z\^_`a-z\|~]+$/
  * @param {string} [filename]
  * @param {object} [options]
  * @param {string} [options.type=attachment]
+ * @param {string|boolean} [options.fallback=true]
  * @return {string}
  * @api public
  */
@@ -99,20 +100,53 @@ function contentDisposition(filename, options) {
     throw new TypeError('argument filename must be a string')
   }
 
+  // get fallback
+  var fallback = opts.fallback !== undefined
+    ? opts.fallback
+    : true
+
+  if (typeof fallback !== 'string' && typeof fallback !== 'boolean') {
+    throw new TypeError('option fallback must be a string or boolean')
+  }
+
+  if (typeof fallback === 'string' && nonAsciiRegExp.test(fallback)) {
+    throw new TypeError('option fallback must be US-ASCII string')
+  }
+
   // restrict to file base name
   var name = basename(filename)
 
-  if (asciiStringRegExp.test(name) && !hexEscapeRegExp.test(name)) {
+  // generate fallback name
+  var fallbackName = typeof fallback !== 'string'
+    ? fallback && getascii(name)
+    : basename(fallback)
+
+  var isSimpleHeader = (typeof fallbackName !== 'string' || fallbackName === name)
+    && asciiStringRegExp.test(name)
+    && !hexEscapeRegExp.test(name)
+
+  if (isSimpleHeader) {
     // simple header
     // file name is always quoted and not a token for RFC 2616 compatibility
     return type + '; filename=' + qstring(name)
   }
 
-  // simple Unicode -> US-ASCII transliteration
-  var asciiFilename = name.replace(nonAsciiRegExp, '?')
-
-  return type + '; filename=' + qstring(asciiFilename)
+  return type
+    + (fallbackName !== false ? '; filename=' + qstring(fallbackName) : '')
     + '; filename*=' + ustring(name)
+}
+
+/**
+ * Get US-ASCII version of string.
+ *
+ * @param {string} val
+ * @return {string}
+ * @api private
+ */
+
+function getascii(val) {
+  // simple Unicode -> US-ASCII transformation
+  return String(val).replace(nonAsciiRegExp, '?')
 }
 
 /**

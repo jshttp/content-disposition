@@ -72,6 +72,74 @@ describe('contentDisposition(filename)', function () {
 })
 
 describe('contentDisposition(filename, options)', function () {
+  describe('with "fallback" option', function () {
+    it('should require a string or Boolean', function () {
+      assert.throws(contentDisposition.bind(null, 'plans.pdf', { fallback: 42 }),
+        /option fallback.*string/)
+    })
+
+    it('should default to true', function () {
+      assert.equal(contentDisposition('«plans».pdf'),
+        'attachment; filename="?plans?.pdf"; filename*=UTF-8\'\'%C2%ABplans%C2%BB.pdf')
+    })
+
+    describe('when "false"', function () {
+      it('should not generate ASCII fallback', function () {
+        assert.equal(contentDisposition('«plans».pdf', { fallback: false }),
+          'attachment; filename*=UTF-8\'\'%C2%ABplans%C2%BB.pdf')
+      })
+
+      it('should keep ASCII filename', function () {
+        assert.equal(contentDisposition('plans.pdf', { fallback: false }),
+          'attachment; filename="plans.pdf"')
+      })
+    })
+
+    describe('when "true"', function () {
+      it('should generate ASCII fallback', function () {
+        assert.equal(contentDisposition('«plans».pdf', { fallback: true }),
+          'attachment; filename="?plans?.pdf"; filename*=UTF-8\'\'%C2%ABplans%C2%BB.pdf')
+      })
+
+      it('should pass through ASCII filename', function () {
+        assert.equal(contentDisposition('plans.pdf', { fallback: true }),
+          'attachment; filename="plans.pdf"')
+      })
+    })
+
+    describe('when a string', function () {
+      it('should require an ASCII string', function () {
+        assert.throws(contentDisposition.bind(null, '«plans».pdf', { fallback: '«plans».pdf' }),
+          /option fallback.*ascii/i)
+      })
+
+      it('should use as ASCII fallback', function () {
+        assert.equal(contentDisposition('«plans».pdf', { fallback: 'plans.pdf' }),
+          'attachment; filename="plans.pdf"; filename*=UTF-8\'\'%C2%ABplans%C2%BB.pdf')
+      })
+
+      it('should use as fallback even when filename is ASCII', function () {
+        assert.equal(contentDisposition('"plans".pdf', { fallback: 'plans.pdf' }),
+          'attachment; filename="plans.pdf"; filename*=UTF-8\'\'%22plans%22.pdf')
+      })
+
+      it('should do nothing if equal to filename', function () {
+        assert.equal(contentDisposition('plans.pdf', { fallback: 'plans.pdf' }),
+          'attachment; filename="plans.pdf"')
+      })
+
+      it('should use the basename of the string', function () {
+        assert.equal(contentDisposition('«plans».pdf', { fallback: '/path/to/plans.pdf' }),
+          'attachment; filename="plans.pdf"; filename*=UTF-8\'\'%C2%ABplans%C2%BB.pdf')
+      })
+
+      it('should do nothing without filename option', function () {
+        assert.equal(contentDisposition(undefined, { fallback: 'plans.pdf' }),
+          'attachment')
+      })
+    })
+  })
+
   describe('with "type" option', function () {
     it('should default to attachment', function () {
       assert.equal(contentDisposition(),
