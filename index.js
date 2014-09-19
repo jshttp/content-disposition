@@ -49,22 +49,50 @@ var quoteRegExp = /([\\"])/g
 /**
  * RegExp for various RFC 2616 grammar
  *
- * TEXT = <any OCTET except CTLs, but including LWS>
+ * token      = 1*<any CHAR except CTLs or separators>
+ * separators = "(" | ")" | "<" | ">" | "@"
+ *            | "," | ";" | ":" | "\" | <">
+ *            | "/" | "[" | "]" | "?" | "="
+ *            | "{" | "}" | SP | HT
+ * CHAR       = <any US-ASCII character (octets 0 - 127)>
+ * TEXT       = <any OCTET except CTLs, but including LWS>
+ * SP         = <US-ASCII SP, space (32)>
+ * HT         = <US-ASCII HT, horizontal-tab (9)>
+ * CTL        = <any US-ASCII control character (octets 0 - 31) and DEL (127)>
  */
 
 var textRegExp = /^[\u0020-\u007e\u0080-\u00ff]+$/
+var tokenRegExp = /^[!#$%&'\*\+\-\.0-9A-Z\^_`a-z\|~]+$/
 
 /**
  * Create an attachment Content-Disposition header.
  *
- * @param {string} filename
+ * @param {string} [filename]
+ * @param {object} [options]
+ * @param {string} [options.type=attachment]
  * @return {string}
  * @api public
  */
 
-function contentDisposition(filename) {
+function contentDisposition(filename, options) {
+  var opts = options || {}
+
+  // get type
+  var type = opts.type || 'attachment'
+
+  if (typeof type !== 'string') {
+    throw new TypeError('option type must be a string')
+  }
+
+  if (!tokenRegExp.test(type)) {
+    throw new TypeError('option type must be a valid token')
+  }
+
+  // normalize type
+  type = type.toLowerCase()
+
   if (filename === undefined) {
-    return 'attachment'
+    return type
   }
 
   if (typeof filename !== 'string') {
@@ -77,13 +105,13 @@ function contentDisposition(filename) {
   if (asciiStringRegExp.test(name) && !hexEscapeRegExp.test(name)) {
     // simple header
     // file name is always quoted and not a token for RFC 2616 compatibility
-    return 'attachment; filename=' + qstring(name)
+    return type + '; filename=' + qstring(name)
   }
 
   // simple Unicode -> US-ASCII transliteration
   var asciiFilename = name.replace(nonAsciiRegExp, '?')
 
-  return 'attachment; filename=' + qstring(asciiFilename)
+  return type + '; filename=' + qstring(asciiFilename)
     + '; filename*=' + ustring(name)
 }
 

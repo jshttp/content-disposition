@@ -20,14 +20,26 @@ $ npm install content-disposition
 var contentDisposition = require('content-disposition')
 ```
 
-### contentDisposition([filename])
+### contentDisposition(filename, options)
 
 Create an attachment `Content-Disposition` header value using the given file name,
-if supplied.
+if supplied. The `filename` is optional and if no file name is desired, but you
+want to specify `options`, set `filename` to `undefined`.
 
 ```js
 res.setHeader('Content-Disposition', contentDisposition('∫ maths.pdf'))
 ```
+
+#### Options
+
+`contentDisposition` accepts these properties in the options object.
+
+##### type
+
+Specifies the disposition type, defaults to `"attachment"`. This can also be
+`"inline"`, or any other value (all values except inline are treated like
+`attachment`, but can convey additional information if both parties agree to
+it). The type is normalized to lower-case.
 
 ## Examples
 

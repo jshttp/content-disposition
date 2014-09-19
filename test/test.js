@@ -70,3 +70,37 @@ describe('contentDisposition(filename)', function () {
     })
   })
 })
+
+describe('contentDisposition(filename, options)', function () {
+  describe('with "type" option', function () {
+    it('should default to attachment', function () {
+      assert.equal(contentDisposition(),
+        'attachment')
+    })
+
+    it('should require a string', function () {
+      assert.throws(contentDisposition.bind(null, undefined, { type: 42 }),
+        /option type.*string/)
+    })
+
+    it('should require a valid type', function () {
+      assert.throws(contentDisposition.bind(null, undefined, { type: 'invlaid;type' }),
+        /option type.*valid token/)
+    })
+
+    it('should create a header with inline type', function () {
+      assert.equal(contentDisposition(undefined, { type: 'inline' }),
+        'inline')
+    })
+
+    it('should create a header with inline type & filename', function () {
+      assert.equal(contentDisposition('plans.pdf', { type: 'inline' }),
+        'inline; filename="plans.pdf"')
+    })
+
+    it('should normalize type', function () {
+      assert.equal(contentDisposition(undefined, { type: 'INLINE' }),
+        'inline')
+    })
+  })
+})
