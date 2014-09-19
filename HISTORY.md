@@ -1,5 +1,5 @@
-unreleased
-==========
+0.1.1 / 2014-09-19
+==================
 
   * Fix invalid characters appearing in `filename*` parameter
 
