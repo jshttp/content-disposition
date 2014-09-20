@@ -1,5 +1,5 @@
-unreleased
-==========
+0.2.0 / 2014-09-19
+==================
 
   * Reduce ambiguity of file names with hex escape in buggy browsers
 
