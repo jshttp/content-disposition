@@ -1,3 +1,8 @@
+unreleased
+==========
+
+  * Reduce ambiguity of file names with hex escape in buggy browsers
+
 0.1.2 / 2014-09-19
 ==================
 

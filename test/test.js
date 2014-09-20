@@ -49,4 +49,14 @@ describe('contentDisposition(filename)', function () {
       assert.equal(contentDisposition('«\'*%()».pdf'), 'attachment; filename="?\'*%()?.pdf"; filename*=UTF-8\'\'%C2%AB%27%2A%25%28%29%C2%BB.pdf')
     })
   })
+
+  describe('when "filename" contains hex escape', function () {
+    it('should include filename* parameter', function () {
+      assert.equal(contentDisposition('the%20plans.pdf'), 'attachment; filename="the%20plans.pdf"; filename*=UTF-8\'\'the%2520plans.pdf')
+    })
+
+    it('should handle Unicode', function () {
+      assert.equal(contentDisposition('«%20».pdf'), 'attachment; filename="?%20?.pdf"; filename*=UTF-8\'\'%C2%AB%2520%C2%BB.pdf')
+    })
+  })
 })

@@ -29,6 +29,12 @@ var asciiStringRegExp = /^[\x00-\x7f]*$/
 var encodeUriAttrCharRegExp = /[\x00-\x20"'\(\)*,\/:;<=>?@\[\\\]\{\}\x7f]/g
 
 /**
+ * RegExp to match percent encoding escape.
+ */
+
+var hexEscapeRegExp = /%[0-9A-F]{2}/i
+
+/**
  * RegExp to match non-US-ASCII characters.
  */
 
@@ -68,7 +74,7 @@ function contentDisposition(filename) {
   // restrict to file base name
   var name = basename(filename)
 
-  if (asciiStringRegExp.test(name)) {
+  if (asciiStringRegExp.test(name) && !hexEscapeRegExp.test(name)) {
     // simple header
     // file name is always quoted and not a token for RFC 2616 compatibility
     return 'attachment; filename=' + qstring(name)
