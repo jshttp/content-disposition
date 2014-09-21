@@ -26,7 +26,7 @@ var encodeUriAttrCharRegExp = /[\x00-\x20"'\(\)*,\/:;<=>?@\[\\\]\{\}\x7f]/g
  * RegExp to match percent encoding escape.
  */
 
-var hexEscapeRegExp = /%[0-9A-F]{2}/i
+var hexEscapeRegExp = /%[0-9A-Fa-f]{2}/
 
 /**
  * RegExp to match non-RFC 2616 text characters.
