@@ -1,5 +1,5 @@
-unreleased
-==========
+0.3.0 / 2014-09-20
+==================
 
   * Add `fallback` option
   * Add `type` option
