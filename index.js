@@ -17,12 +17,6 @@ module.exports = contentDisposition
 var basename = require('path').basename
 
 /**
- * RegExp to match US-ASCII string
- */
-
-var asciiStringRegExp = /^[\x00-\x7f]*$/
-
-/**
  * RegExp to match non attr-char, *after* encodeURIComponent (i.e. not including "%")
  */
 
@@ -35,10 +29,10 @@ var encodeUriAttrCharRegExp = /[\x00-\x20"'\(\)*,\/:;<=>?@\[\\\]\{\}\x7f]/g
 var hexEscapeRegExp = /%[0-9A-F]{2}/i
 
 /**
- * RegExp to match non-US-ASCII characters.
+ * RegExp to match non-RFC 2616 text characters.
  */
 
-var nonAsciiRegExp = /[^\x00-\x7f]/g
+var nonTextRegExp = /[^\x20-\x7e\x80-\xff]/g
 
 /**
  * RegExp to match chars that must be quoted-pair in RFC 2616
@@ -109,8 +103,8 @@ function contentDisposition(filename, options) {
     throw new TypeError('option fallback must be a string or boolean')
   }
 
-  if (typeof fallback === 'string' && nonAsciiRegExp.test(fallback)) {
-    throw new TypeError('option fallback must be US-ASCII string')
+  if (typeof fallback === 'string' && nonTextRegExp.test(fallback)) {
+    throw new TypeError('option fallback must be ISO-8859-1 string')
   }
 
   // restrict to file base name
@@ -118,12 +112,12 @@ function contentDisposition(filename, options) {
 
   // generate fallback name
   var fallbackName = typeof fallback !== 'string'
-    ? fallback && getascii(name)
+    ? fallback && getlatin1(name)
     : basename(fallback)
 
   var isSimpleHeader = (typeof fallbackName !== 'string' || fallbackName === name)
-    && asciiStringRegExp.test(name)
     && !hexEscapeRegExp.test(name)
+    && textRegExp.test(name)
 
   if (isSimpleHeader) {
     // simple header
@@ -137,16 +131,16 @@ function contentDisposition(filename, options) {
 }
 
 /**
- * Get US-ASCII version of string.
+ * Get ISO-8859-1 version of string.
  *
  * @param {string} val
  * @return {string}
  * @api private
  */
 
-function getascii(val) {
-  // simple Unicode -> US-ASCII transformation
-  return String(val).replace(nonAsciiRegExp, '?')
+function getlatin1(val) {
+  // simple Unicode -> ISO-8859-1 transformation
+  return String(val).replace(nonTextRegExp, '?')
 }
 
 /**
@@ -177,10 +171,6 @@ function pencode(char) {
 
 function qstring(val) {
   var str = String(val)
-
-  if (str.length > 0 && !textRegExp.test(str)) {
-    throw new TypeError('invalid quoted string value')
-  }
 
   return '"' + str.replace(quoteRegExp, '\\$1') + '"'
 }

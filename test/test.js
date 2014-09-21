@@ -24,11 +24,6 @@ describe('contentDisposition(filename)', function () {
       'attachment; filename="plans.pdf"')
   })
 
-  it('should not accept filename with NULLs', function () {
-    assert.throws(contentDisposition.bind(null, 'plans\u0000.pdf'),
-      /invalid.*value/)
-  })
-
   describe('when "filename" is US-ASCII', function () {
     it('should only include filename parameter', function () {
       assert.equal(contentDisposition('plans.pdf'),
@@ -41,6 +36,18 @@ describe('contentDisposition(filename)', function () {
     })
   })
 
+  describe('when "filename" is ISO-8859-1', function () {
+    it('should only include filename parameter', function () {
+      assert.equal(contentDisposition('«plans».pdf'),
+        'attachment; filename="«plans».pdf"')
+    })
+
+    it('should escape quotes', function () {
+      assert.equal(contentDisposition('the "plans" (1µ).pdf'),
+        'attachment; filename="the \\"plans\\" (1µ).pdf"')
+    })
+  })
+
   describe('when "filename" is Unicode', function () {
     it('should include filename* parameter', function () {
       assert.equal(contentDisposition('планы.pdf'),
@@ -48,25 +55,27 @@ describe('contentDisposition(filename)', function () {
     })
 
     it('should include filename fallback', function () {
-      assert.equal(contentDisposition('«bye».pdf'),
-        'attachment; filename="?bye?.pdf"; filename*=UTF-8\'\'%C2%ABbye%C2%BB.pdf')
-      assert.equal(contentDisposition('«hi».pdf'),
-        'attachment; filename="?hi?.pdf"; filename*=UTF-8\'\'%C2%ABhi%C2%BB.pdf')
+      assert.equal(contentDisposition('£ and € rates.pdf'),
+        'attachment; filename="£ and ? rates.pdf"; filename*=UTF-8\'\'%C2%A3%20and%20%E2%82%AC%20rates.pdf')
+      assert.equal(contentDisposition('€ rates.pdf'),
+        'attachment; filename="? rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf')
     })
 
     it('should encode special characters', function () {
-      assert.equal(contentDisposition('«\'*%()».pdf'),
-        'attachment; filename="?\'*%()?.pdf"; filename*=UTF-8\'\'%C2%AB%27%2A%25%28%29%C2%BB.pdf')
+      assert.equal(contentDisposition('€\'*%().pdf'),
+        'attachment; filename="?\'*%().pdf"; filename*=UTF-8\'\'%E2%82%AC%27%2A%25%28%29.pdf')
     })
   })
 
   describe('when "filename" contains hex escape', function () {
     it('should include filename* parameter', function () {
-      assert.equal(contentDisposition('the%20plans.pdf'), 'attachment; filename="the%20plans.pdf"; filename*=UTF-8\'\'the%2520plans.pdf')
+      assert.equal(contentDisposition('the%20plans.pdf'),
+        'attachment; filename="the%20plans.pdf"; filename*=UTF-8\'\'the%2520plans.pdf')
     })
 
     it('should handle Unicode', function () {
-      assert.equal(contentDisposition('«%20».pdf'), 'attachment; filename="?%20?.pdf"; filename*=UTF-8\'\'%C2%AB%2520%C2%BB.pdf')
+      assert.equal(contentDisposition('€%20£.pdf'),
+        'attachment; filename="?%20£.pdf"; filename*=UTF-8\'\'%E2%82%AC%2520%C2%A3.pdf')
     })
   })
 })
@@ -79,48 +88,48 @@ describe('contentDisposition(filename, options)', function () {
     })
 
     it('should default to true', function () {
-      assert.equal(contentDisposition('«plans».pdf'),
-        'attachment; filename="?plans?.pdf"; filename*=UTF-8\'\'%C2%ABplans%C2%BB.pdf')
+      assert.equal(contentDisposition('€ rates.pdf'),
+        'attachment; filename="? rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf')
     })
 
     describe('when "false"', function () {
-      it('should not generate ASCII fallback', function () {
-        assert.equal(contentDisposition('«plans».pdf', { fallback: false }),
-          'attachment; filename*=UTF-8\'\'%C2%ABplans%C2%BB.pdf')
+      it('should not generate ISO-8859-1 fallback', function () {
+      assert.equal(contentDisposition('£ and € rates.pdf', { fallback: false }),
+        'attachment; filename*=UTF-8\'\'%C2%A3%20and%20%E2%82%AC%20rates.pdf')
       })
 
-      it('should keep ASCII filename', function () {
-        assert.equal(contentDisposition('plans.pdf', { fallback: false }),
-          'attachment; filename="plans.pdf"')
+      it('should keep ISO-8859-1 filename', function () {
+        assert.equal(contentDisposition('£ rates.pdf', { fallback: false }),
+          'attachment; filename="£ rates.pdf"')
       })
     })
 
     describe('when "true"', function () {
-      it('should generate ASCII fallback', function () {
-        assert.equal(contentDisposition('«plans».pdf', { fallback: true }),
-          'attachment; filename="?plans?.pdf"; filename*=UTF-8\'\'%C2%ABplans%C2%BB.pdf')
+      it('should generate ISO-8859-1 fallback', function () {
+        assert.equal(contentDisposition('£ and € rates.pdf', { fallback: true }),
+          'attachment; filename="£ and ? rates.pdf"; filename*=UTF-8\'\'%C2%A3%20and%20%E2%82%AC%20rates.pdf')
       })
 
-      it('should pass through ASCII filename', function () {
-        assert.equal(contentDisposition('plans.pdf', { fallback: true }),
-          'attachment; filename="plans.pdf"')
+      it('should pass through ISO-8859-1 filename', function () {
+        assert.equal(contentDisposition('£ rates.pdf', { fallback: true }),
+          'attachment; filename="£ rates.pdf"')
       })
     })
 
     describe('when a string', function () {
-      it('should require an ASCII string', function () {
-        assert.throws(contentDisposition.bind(null, '«plans».pdf', { fallback: '«plans».pdf' }),
-          /option fallback.*ascii/i)
+      it('should require an ISO-8859-1 string', function () {
+        assert.throws(contentDisposition.bind(null, '€ rates.pdf', { fallback: '€ rates.pdf' }),
+          /option fallback.*iso-8859-1/i)
       })
 
-      it('should use as ASCII fallback', function () {
-        assert.equal(contentDisposition('«plans».pdf', { fallback: 'plans.pdf' }),
-          'attachment; filename="plans.pdf"; filename*=UTF-8\'\'%C2%ABplans%C2%BB.pdf')
+      it('should use as ISO-8859-1 fallback', function () {
+        assert.equal(contentDisposition('£ and € rates.pdf', { fallback: '£ and EURO rates.pdf' }),
+          'attachment; filename="£ and EURO rates.pdf"; filename*=UTF-8\'\'%C2%A3%20and%20%E2%82%AC%20rates.pdf')
       })
 
-      it('should use as fallback even when filename is ASCII', function () {
-        assert.equal(contentDisposition('"plans".pdf', { fallback: 'plans.pdf' }),
-          'attachment; filename="plans.pdf"; filename*=UTF-8\'\'%22plans%22.pdf')
+      it('should use as fallback even when filename is ISO-8859-1', function () {
+        assert.equal(contentDisposition('"£ rates".pdf', { fallback: '£ rates.pdf' }),
+          'attachment; filename="£ rates.pdf"; filename*=UTF-8\'\'%22%C2%A3%20rates%22.pdf')
       })
 
       it('should do nothing if equal to filename', function () {
@@ -129,8 +138,8 @@ describe('contentDisposition(filename, options)', function () {
       })
 
       it('should use the basename of the string', function () {
-        assert.equal(contentDisposition('«plans».pdf', { fallback: '/path/to/plans.pdf' }),
-          'attachment; filename="plans.pdf"; filename*=UTF-8\'\'%C2%ABplans%C2%BB.pdf')
+        assert.equal(contentDisposition('€ rates.pdf', { fallback: '/path/to/EURO rates.pdf' }),
+          'attachment; filename="EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf')
       })
 
       it('should do nothing without filename option', function () {
