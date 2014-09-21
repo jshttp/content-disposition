@@ -1,5 +1,5 @@
-unreleased
-==========
+0.4.0 / 2014-09-21
+==================
 
   * Expand non-Unicode `filename` to the full ISO-8859-1 charset
 
