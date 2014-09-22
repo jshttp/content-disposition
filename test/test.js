@@ -11,7 +11,7 @@ describe('contentDisposition()', function () {
 describe('contentDisposition(filename)', function () {
   it('should require a string', function () {
     assert.throws(contentDisposition.bind(null, 42),
-      /argument filename.*string/)
+      /filename.*string/)
   })
 
   it('should create a header with file name', function () {
@@ -84,7 +84,7 @@ describe('contentDisposition(filename, options)', function () {
   describe('with "fallback" option', function () {
     it('should require a string or Boolean', function () {
       assert.throws(contentDisposition.bind(null, 'plans.pdf', { fallback: 42 }),
-        /option fallback.*string/)
+        /fallback.*string/)
     })
 
     it('should default to true', function () {
@@ -119,7 +119,7 @@ describe('contentDisposition(filename, options)', function () {
     describe('when a string', function () {
       it('should require an ISO-8859-1 string', function () {
         assert.throws(contentDisposition.bind(null, '€ rates.pdf', { fallback: '€ rates.pdf' }),
-          /option fallback.*iso-8859-1/i)
+          /fallback.*iso-8859-1/i)
       })
 
       it('should use as ISO-8859-1 fallback', function () {
@@ -157,12 +157,12 @@ describe('contentDisposition(filename, options)', function () {
 
     it('should require a string', function () {
       assert.throws(contentDisposition.bind(null, undefined, { type: 42 }),
-        /option type.*string/)
+        /invalid type/)
     })
 
     it('should require a valid type', function () {
       assert.throws(contentDisposition.bind(null, undefined, { type: 'invlaid;type' }),
-        /option type.*valid token/)
+        /invalid type/)
     })
 
     it('should create a header with inline type', function () {

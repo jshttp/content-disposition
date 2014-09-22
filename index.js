@@ -134,59 +134,111 @@ function contentDisposition(filename, options) {
   // get type
   var type = opts.type || 'attachment'
 
-  if (typeof type !== 'string') {
-    throw new TypeError('option type must be a string')
-  }
+  // get parameters
+  var params = createparams(filename, opts.fallback)
 
-  if (!tokenRegExp.test(type)) {
-    throw new TypeError('option type must be a valid token')
-  }
+  // format into string
+  return format(new ContentDisposition(type, params))
+}
 
-  // normalize type
-  type = type.toLowerCase()
+/**
+ * Create parameters object from filename and fallback.
+ *
+ * @param {string} [filename]
+ * @param {string|boolean} [fallback=true]
+ * @return {object}
+ * @api private
+ */
 
+function createparams(filename, fallback) {
   if (filename === undefined) {
-    return type
+    return
   }
+
+  var params = {}
 
   if (typeof filename !== 'string') {
-    throw new TypeError('argument filename must be a string')
+    throw new TypeError('filename must be a string')
   }
 
-  // get fallback
-  var fallback = opts.fallback !== undefined
-    ? opts.fallback
-    : true
+  // fallback defaults to true
+  if (fallback === undefined) {
+    fallback = true
+  }
 
   if (typeof fallback !== 'string' && typeof fallback !== 'boolean') {
-    throw new TypeError('option fallback must be a string or boolean')
+    throw new TypeError('fallback must be a string or boolean')
   }
 
   if (typeof fallback === 'string' && nonLatin1RegExp.test(fallback)) {
-    throw new TypeError('option fallback must be ISO-8859-1 string')
+    throw new TypeError('fallback must be ISO-8859-1 string')
   }
 
   // restrict to file base name
   var name = basename(filename)
 
+  // determine if name is suitable for quoted string
+  var isQuotedString = textRegExp.test(name)
+
   // generate fallback name
   var fallbackName = typeof fallback !== 'string'
     ? fallback && getlatin1(name)
     : basename(fallback)
+  var hasFallback = typeof fallbackName === 'string' && fallbackName !== name
 
-  var isSimpleHeader = (typeof fallbackName !== 'string' || fallbackName === name)
-    && !hexEscapeRegExp.test(name)
-    && textRegExp.test(name)
-
-  if (isSimpleHeader) {
-    // simple header
-    // file name is always quoted and not a token for RFC 2616 compatibility
-    return type + '; filename=' + qstring(name)
+  // set extended filename parameter
+  if (hasFallback || !isQuotedString || hexEscapeRegExp.test(name)) {
+    params['filename*'] = name
   }
 
-  return type
-    + (fallbackName !== false ? '; filename=' + qstring(fallbackName) : '')
-    + '; filename*=' + ustring(name)
+  // set filename parameter
+  if (isQuotedString || hasFallback) {
+    params.filename = hasFallback
+      ? fallbackName
+      : name
+  }
+
+  return params
+}
+
+/**
+ * Format object to Content-Disposition header.
+ *
+ * @param {object} obj
+ * @param {string} obj.type
+ * @param {object} [obj.parameters]
+ * @return {string}
+ * @api private
+ */
+
+function format(obj) {
+  var parameters = obj.parameters
+  var type = obj.type
+
+  if (!type || typeof type !== 'string' || !tokenRegExp.test(type)) {
+    throw new TypeError('invalid type')
+  }
+
+  // start with normalized type
+  var string = String(type).toLowerCase()
+
+  // append parameters
+  if (parameters && typeof parameters === 'object') {
+    var param
+    var params = Object.keys(parameters).sort()
+
+    for (var i = 0; i < params.length; i++) {
+      param = params[i]
+
+      var val = param.substr(-1) === '*'
+        ? ustring(parameters[param])
+        : qstring(parameters[param])
+
+      string += '; ' + param + '=' + val
+    }
+  }
+
+  return string
 }
 
 /**
@@ -387,5 +439,5 @@ function ustring(val) {
 
 function ContentDisposition(type, parameters) {
   this.type = type
-  this.parameters = parameters || {}
+  this.parameters = parameters
 }
