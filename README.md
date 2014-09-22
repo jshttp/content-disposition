@@ -6,7 +6,7 @@
 [![Build Status][travis-image]][travis-url]
 [![Test Coverage][coveralls-image]][coveralls-url]
 
-Create an attachment Content-Disposition header
+Create and parse HTTP `Content-Disposition` header
 
 ## Installation
 
