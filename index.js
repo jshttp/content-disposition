@@ -23,7 +23,7 @@ var basename = require('path').basename
  * RegExp to match non attr-char, *after* encodeURIComponent (i.e. not including "%")
  */
 
-var encodeUriAttrCharRegExp = /[\x00-\x20"'\(\)*,\/:;<=>?@\[\\\]\{\}\x7f]/g
+var encodeUriAttrCharRegExp = /[\x00-\x20"'\(\)*,\/:;<=>?@\[\\\]\{\}\x7f]/g // eslint-disable-line no-control-regex
 
 /**
  * RegExp to match percent encoding escape.
@@ -45,7 +45,7 @@ var nonLatin1RegExp = /[^\x20-\x7e\xa0-\xff]/g
  * CHAR        = <any US-ASCII character (octets 0 - 127)>
  */
 
-var qescRegExp = /\\([\u0000-\u007f])/g;
+var qescRegExp = /\\([\u0000-\u007f])/g
 
 /**
  * RegExp to match chars that must be quoted-pair in RFC 2616
@@ -130,7 +130,7 @@ var dispositionTypeRegExp = /^([!#$%&'\*\+\-\.0-9A-Z\^_`a-z\|~]+) *(?:$|;)/
  * @api public
  */
 
-function contentDisposition(filename, options) {
+function contentDisposition (filename, options) {
   var opts = options || {}
 
   // get type
@@ -152,7 +152,7 @@ function contentDisposition(filename, options) {
  * @api private
  */
 
-function createparams(filename, fallback) {
+function createparams (filename, fallback) {
   if (filename === undefined) {
     return
   }
@@ -213,7 +213,7 @@ function createparams(filename, fallback) {
  * @api private
  */
 
-function format(obj) {
+function format (obj) {
   var parameters = obj.parameters
   var type = obj.type
 
@@ -251,7 +251,7 @@ function format(obj) {
  * @api private
  */
 
-function decodefield(str) {
+function decodefield (str) {
   var match = extValueRegExp.exec(str)
 
   if (!match) {
@@ -287,7 +287,7 @@ function decodefield(str) {
  * @api private
  */
 
-function getlatin1(val) {
+function getlatin1 (val) {
   // simple Unicode -> ISO-8859-1 transformation
   return String(val).replace(nonLatin1RegExp, '?')
 }
@@ -300,7 +300,7 @@ function getlatin1(val) {
  * @api private
  */
 
-function parse(string) {
+function parse (string) {
   if (!string || typeof string !== 'string') {
     throw new TypeError('argument string is required')
   }
@@ -326,7 +326,7 @@ function parse(string) {
     : index
 
   // match parameters
-  while (match = paramRegExp.exec(string)) {
+  while ((match = paramRegExp.exec(string))) {
     if (match.index !== index) {
       throw new TypeError('invalid parameter format')
     }
@@ -381,7 +381,7 @@ function parse(string) {
  * @api private
  */
 
-function pdecode(str, hex) {
+function pdecode (str, hex) {
   return String.fromCharCode(parseInt(hex, 16))
 }
 
@@ -393,7 +393,7 @@ function pdecode(str, hex) {
  * @api private
  */
 
-function pencode(char) {
+function pencode (char) {
   var hex = String(char)
     .charCodeAt(0)
     .toString(16)
@@ -411,7 +411,7 @@ function pencode(char) {
  * @api private
  */
 
-function qstring(val) {
+function qstring (val) {
   var str = String(val)
 
   return '"' + str.replace(quoteRegExp, '\\$1') + '"'
@@ -425,7 +425,7 @@ function qstring(val) {
  * @api private
  */
 
-function ustring(val) {
+function ustring (val) {
   var str = String(val)
 
   // percent encode as UTF-8
@@ -439,7 +439,7 @@ function ustring(val) {
  * Class for parsed Content-Disposition header for v8 optimization
  */
 
-function ContentDisposition(type, parameters) {
+function ContentDisposition (type, parameters) {
   this.type = type
   this.parameters = parameters
 }
