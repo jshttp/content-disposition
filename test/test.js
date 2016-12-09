@@ -224,7 +224,7 @@ describe('contentDisposition.parse(string)', function () {
     })
 
     it('should parse with trailing LWS', function () {
-      assert.deepEqual(contentDisposition.parse('attachment   '), {
+      assert.deepEqual(contentDisposition.parse('attachment \t '), {
         type: 'attachment',
         parameters: {}
       })
@@ -299,6 +299,13 @@ describe('contentDisposition.parse(string)', function () {
 
     it('should include all parameters', function () {
       assert.deepEqual(contentDisposition.parse('attachment; filename="plans.pdf"; foo=bar'), {
+        type: 'attachment',
+        parameters: { filename: 'plans.pdf', foo: 'bar' }
+      })
+    })
+
+    it('should parse parameters separated with any LWS', function () {
+      assert.deepEqual(contentDisposition.parse('attachment;filename="plans.pdf" \t;    \t\t foo=bar'), {
         type: 'attachment',
         parameters: { filename: 'plans.pdf', foo: 'bar' }
       })

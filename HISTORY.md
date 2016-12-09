@@ -1,3 +1,8 @@
+unreleased
+==========
+
+  * Fix `parse` to accept any linear whitespace character
+
 0.5.1 / 2016-01-17
 ==================
 
