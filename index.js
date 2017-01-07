@@ -394,13 +394,10 @@ function pdecode (str, hex) {
  */
 
 function pencode (char) {
-  var hex = String(char)
+  return '%' + String(char)
     .charCodeAt(0)
     .toString(16)
     .toUpperCase()
-  return hex.length === 1
-    ? '%0' + hex
-    : '%' + hex
 }
 
 /**
