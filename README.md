@@ -129,13 +129,13 @@ $ npm test
 
 [MIT](LICENSE)
 
-[npm-image]: https://img.shields.io/npm/v/content-disposition.svg?style=flat
+[npm-image]: https://img.shields.io/npm/v/content-disposition.svg
 [npm-url]: https://npmjs.org/package/content-disposition
-[node-version-image]: https://img.shields.io/node/v/content-disposition.svg?style=flat
+[node-version-image]: https://img.shields.io/node/v/content-disposition.svg
 [node-version-url]: https://nodejs.org/en/download
-[travis-image]: https://img.shields.io/travis/jshttp/content-disposition.svg?style=flat
+[travis-image]: https://img.shields.io/travis/jshttp/content-disposition.svg
 [travis-url]: https://travis-ci.org/jshttp/content-disposition
-[coveralls-image]: https://img.shields.io/coveralls/jshttp/content-disposition.svg?style=flat
+[coveralls-image]: https://img.shields.io/coveralls/jshttp/content-disposition.svg
 [coveralls-url]: https://coveralls.io/r/jshttp/content-disposition?branch=master
-[downloads-image]: https://img.shields.io/npm/dm/content-disposition.svg?style=flat
+[downloads-image]: https://img.shields.io/npm/dm/content-disposition.svg
 [downloads-url]: https://npmjs.org/package/content-disposition
