@@ -16,6 +16,8 @@ $ npm install content-disposition
 
 ## API
 
+<!-- eslint-disable no-unused-vars -->
+
 ```js
 var contentDisposition = require('content-disposition')
 ```
@@ -25,6 +27,8 @@ var contentDisposition = require('content-disposition')
 Create an attachment `Content-Disposition` header value using the given file name,
 if supplied. The `filename` is optional and if no file name is desired, but you
 want to specify `options`, set `filename` to `undefined`.
+
+<!-- eslint-disable no-undef -->
 
 ```js
 res.setHeader('Content-Disposition', contentDisposition('∫ maths.pdf'))
@@ -66,8 +70,10 @@ it). The type is normalized to lower-case.
 
 ### contentDisposition.parse(string)
 
+<!-- eslint-disable no-undef, no-unused-vars -->
+
 ```js
-var disposition = contentDisposition.parse('attachment; filename="EURO rates.txt"; filename*=UTF-8\'\'%e2%82%ac%20rates.txt');
+var disposition = contentDisposition.parse('attachment; filename="EURO rates.txt"; filename*=UTF-8\'\'%e2%82%ac%20rates.txt')
 ```
 
 Parse a `Content-Disposition` header string. This automatically handles extended
@@ -88,12 +94,13 @@ are shown for the string `'attachment; filename="EURO rates.txt"; filename*=UTF-
 ```js
 var contentDisposition = require('content-disposition')
 var destroy = require('destroy')
+var fs = require('fs')
 var http = require('http')
 var onFinished = require('on-finished')
 
 var filePath = '/path/to/public/plans.pdf'
 
-http.createServer(function onRequest(req, res) {
+http.createServer(function onRequest (req, res) {
   // set headers
   res.setHeader('Content-Type', 'application/pdf')
   res.setHeader('Content-Disposition', contentDisposition(filePath))
@@ -101,7 +108,7 @@ http.createServer(function onRequest(req, res) {
   // send file
   var stream = fs.createReadStream(filePath)
   stream.pipe(res)
-  onFinished(res, function (err) {
+  onFinished(res, function () {
     destroy(stream)
   })
 })
