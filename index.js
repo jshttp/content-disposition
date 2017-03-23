@@ -281,6 +281,7 @@ function decodefield (str) {
       value = getlatin1(binary)
       break
     case 'utf-8':
+    case 'utf8':
       value = Buffer.from(binary, 'binary').toString('utf8')
       break
     default:
