@@ -952,7 +952,21 @@ describe('contentDisposition.parse(string)', function () {
       it('should parse "attachment; filename="=?ISO-8859-1?Q?foo-=E4.html?=""', function () {
         assert.deepEqual(contentDisposition.parse('attachment; filename="=?ISO-8859-1?Q?foo-=E4.html?="'), {
           type: 'attachment',
-          parameters: { filename: '=?ISO-8859-1?Q?foo-=E4.html?=' }
+          parameters: { filename: 'foo-ä.html' }
+        })
+      })
+
+      it('should parse "attachment; filename="=?utf-8?B?TGVzIGPDomJsZXMgb3B0aXF1ZXMuemlw?=""', function () {
+        assert.deepEqual(contentDisposition.parse('attachment; filename="=?utf-8?B?Zm9vLcOkLmh0bWw?="'), {
+          type: 'attachment',
+          parameters: { filename: 'foo-ä.html' }
+        })
+      })
+
+      it('should not match unknown encodings', function () {
+        assert.deepEqual(contentDisposition.parse('attachment; filename="=?utf-8?x?whatever?="'), {
+          type: 'attachment',
+          parameters: { filename: '=?utf-8?x?whatever?=' }
         })
       })
     })
