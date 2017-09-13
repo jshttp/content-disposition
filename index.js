@@ -61,6 +61,23 @@ var QESC_REGEXP = /\\([\u0000-\u007f])/g
 var QUOTE_REGEXP = /([\\"])/g
 
 /**
+ * RegExp for various RFC 2047 grammar
+ *
+ * encoded-word = "=?" charset "?" encoding "?" encoded-text "?="
+ *
+ * charset      = token
+ * encoding     = token
+ * token        = 1*<Any CHAR except SPACE, CTLs, and especials>
+ * especials    = "(" / ")" / "<" / ">" / "@" / "," / ";" / ":" / "
+                  <"> / "/" / "[" / "]" / "?" / "." / "="
+ * encoded-text = 1*<Any printable ASCII character other than "?" or SPACE>
+ *
+ * @private
+ */
+
+var NON_ASCII_REGEXP = /=\?([^?]+)\?([bq])\?([^?]+)\?=/i
+
+/**
  * RegExp for various RFC 2616 grammar
  *
  * parameter     = token "=" ( token | quoted-string )
@@ -361,6 +378,22 @@ function parse (string) {
       continue
     }
 
+    var rfc2047Match = NON_ASCII_REGEXP.exec(value)
+    if (rfc2047Match) {
+      var charset = rfc2047Match[1]
+      var encoding = rfc2047Match[2].toLowerCase()
+      var token = rfc2047Match[3]
+
+      if (encoding === 'b') {
+        // the Buffer constructor is deprecated as of node 6.0
+        // we should use Buffer.from(token, 'base64') but that
+        // means dropping support for node < 5.10
+        value = new Buffer(token, 'base64').toString(charset)
+      } else if (encoding === 'q') {
+        value = decodeQuotedPrintable(token)
+      }
+    }
+
     if (typeof params[key] === 'string') {
       continue
     }
@@ -408,6 +441,24 @@ function pencode (char) {
     .charCodeAt(0)
     .toString(16)
     .toUpperCase()
+}
+
+/**
+ * Decode a quoted-printable string.
+ *
+ * @param {string} val
+ * @return {string}
+ * @private
+ */
+
+function decodeQuotedPrintable (val) {
+  return val
+    // Remove whitespaces
+    .replace(/[\t\x20]$/gm, '')
+    // Remove linebreaks preceded by `=`
+    .replace(/=(?:\r\n?|\n|$)/g, '')
+    // Decode escape sequences (=XX)
+    .replace(/=([a-fA-F0-9]{2})/g, pdecode)
 }
 
 /**
