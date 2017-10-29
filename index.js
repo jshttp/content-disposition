@@ -444,7 +444,11 @@ function ustring (val) {
 
 /**
  * Class for parsed Content-Disposition header for v8 optimization
+ *
  * @public
+ * @param {string} type
+ * @param {object} parameters
+ * @constructor
  */
 
 function ContentDisposition (type, parameters) {
