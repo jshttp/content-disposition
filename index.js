@@ -20,6 +20,7 @@ module.exports.parse = parse
  */
 
 var basename = require('path').basename
+var Buffer = require('safe-buffer').Buffer
 
 /**
  * RegExp to match non attr-char, *after* encodeURIComponent (i.e. not including "%")
@@ -280,7 +281,7 @@ function decodefield (str) {
       value = getlatin1(binary)
       break
     case 'utf-8':
-      value = new Buffer(binary, 'binary').toString('utf8')
+      value = Buffer.from(binary, 'binary').toString('utf8')
       break
     default:
       throw new TypeError('unsupported charset in extended field')

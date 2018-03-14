@@ -1,3 +1,8 @@
+unreleased
+==========
+
+  * Use `safe-buffer` for improved Buffer API
+
 0.5.2 / 2016-12-08
 ==================
 

@@ -11,6 +11,9 @@
     "res"
   ],
   "repository": "jshttp/content-disposition",
+  "dependencies": {
+    "safe-buffer": "5.1.1"
+  },
   "devDependencies": {
     "eslint": "3.19.0",
     "eslint-config-standard": "7.0.0",
