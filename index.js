@@ -280,7 +280,14 @@ function decodefield (str) {
       value = getlatin1(binary)
       break
     case 'utf-8':
-      value = new Buffer(binary, 'binary').toString('utf8')
+      if (Buffer.from && Buffer.from !== Uint8Array.from) {
+        // Node.js 4.5.0 or newer
+        value = Buffer.from(binary, 'binary').toString('utf8')
+      } else {
+        // Old Node.js versions
+        // `binary` is always a string here, so this is safe
+        buf = value = new Buffer(binary, 'binary').toString('utf8')
+      }
       break
     default:
       throw new TypeError('unsupported charset in extended field')
