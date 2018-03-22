@@ -52,7 +52,7 @@ var NON_LATIN1_REGEXP = /[^\x20-\x7e\xa0-\xff]/g
  * @private
  */
 
-var QESC_REGEXP = /\\([\u0000-\u007f])/g
+var QESC_REGEXP = /\\([\u0000-\u007f])/g // eslint-disable-line no-control-regex
 
 /**
  * RegExp to match chars that must be quoted-pair in RFC 2616

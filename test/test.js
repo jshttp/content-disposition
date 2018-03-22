@@ -95,7 +95,7 @@ describe('contentDisposition(filename, options)', function () {
     describe('when "false"', function () {
       it('should not generate ISO-8859-1 fallback', function () {
         assert.equal(contentDisposition('£ and € rates.pdf', { fallback: false }),
-        'attachment; filename*=UTF-8\'\'%C2%A3%20and%20%E2%82%AC%20rates.pdf')
+          'attachment; filename*=UTF-8\'\'%C2%A3%20and%20%E2%82%AC%20rates.pdf')
       })
 
       it('should keep ISO-8859-1 filename', function () {
