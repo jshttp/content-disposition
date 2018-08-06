@@ -12,7 +12,7 @@
   ],
   "repository": "jshttp/content-disposition",
   "dependencies": {
-    "safe-buffer": "5.1.1"
+    "safe-buffer": "5.1.2"
   },
   "devDependencies": {
     "eslint": "4.19.1",
