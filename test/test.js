@@ -1,6 +1,7 @@
 
 var assert = require('assert')
 var contentDisposition = require('..')
+var deepEqual = require('deep-equal')
 
 describe('contentDisposition()', function () {
   it('should create an attachment header', function () {
@@ -203,35 +204,35 @@ describe('contentDisposition.parse(string)', function () {
     })
 
     it('should parse "attachment"', function () {
-      assert.deepEqual(contentDisposition.parse('attachment'), {
+      deepEqual(contentDisposition.parse('attachment'), {
         type: 'attachment',
         parameters: {}
       })
     })
 
     it('should parse "inline"', function () {
-      assert.deepEqual(contentDisposition.parse('inline'), {
+      deepEqual(contentDisposition.parse('inline'), {
         type: 'inline',
         parameters: {}
       })
     })
 
     it('should parse "form-data"', function () {
-      assert.deepEqual(contentDisposition.parse('form-data'), {
+      deepEqual(contentDisposition.parse('form-data'), {
         type: 'form-data',
         parameters: {}
       })
     })
 
     it('should parse with trailing LWS', function () {
-      assert.deepEqual(contentDisposition.parse('attachment \t '), {
+      deepEqual(contentDisposition.parse('attachment \t '), {
         type: 'attachment',
         parameters: {}
       })
     })
 
     it('should normalize to lower-case', function () {
-      assert.deepEqual(contentDisposition.parse('ATTACHMENT'), {
+      deepEqual(contentDisposition.parse('ATTACHMENT'), {
         type: 'attachment',
         parameters: {}
       })
@@ -277,49 +278,49 @@ describe('contentDisposition.parse(string)', function () {
     })
 
     it('should lower-case parameter name', function () {
-      assert.deepEqual(contentDisposition.parse('attachment; FILENAME="plans.pdf"'), {
+      deepEqual(contentDisposition.parse('attachment; FILENAME="plans.pdf"'), {
         type: 'attachment',
         parameters: { filename: 'plans.pdf' }
       })
     })
 
     it('should parse quoted parameter value', function () {
-      assert.deepEqual(contentDisposition.parse('attachment; filename="plans.pdf"'), {
+      deepEqual(contentDisposition.parse('attachment; filename="plans.pdf"'), {
         type: 'attachment',
         parameters: { filename: 'plans.pdf' }
       })
     })
 
     it('should parse & unescape quoted value', function () {
-      assert.deepEqual(contentDisposition.parse('attachment; filename="the \\"plans\\".pdf"'), {
+      deepEqual(contentDisposition.parse('attachment; filename="the \\"plans\\".pdf"'), {
         type: 'attachment',
         parameters: { filename: 'the "plans".pdf' }
       })
     })
 
     it('should include all parameters', function () {
-      assert.deepEqual(contentDisposition.parse('attachment; filename="plans.pdf"; foo=bar'), {
+      deepEqual(contentDisposition.parse('attachment; filename="plans.pdf"; foo=bar'), {
         type: 'attachment',
         parameters: { filename: 'plans.pdf', foo: 'bar' }
       })
     })
 
     it('should parse parameters separated with any LWS', function () {
-      assert.deepEqual(contentDisposition.parse('attachment;filename="plans.pdf" \t;    \t\t foo=bar'), {
+      deepEqual(contentDisposition.parse('attachment;filename="plans.pdf" \t;    \t\t foo=bar'), {
         type: 'attachment',
         parameters: { filename: 'plans.pdf', foo: 'bar' }
       })
     })
 
     it('should parse token filename', function () {
-      assert.deepEqual(contentDisposition.parse('attachment; filename=plans.pdf'), {
+      deepEqual(contentDisposition.parse('attachment; filename=plans.pdf'), {
         type: 'attachment',
         parameters: { filename: 'plans.pdf' }
       })
     })
 
     it('should parse ISO-8859-1 filename', function () {
-      assert.deepEqual(contentDisposition.parse('attachment; filename="£ rates.pdf"'), {
+      deepEqual(contentDisposition.parse('attachment; filename="£ rates.pdf"'), {
         type: 'attachment',
         parameters: { filename: '£ rates.pdf' }
       })
@@ -333,36 +334,36 @@ describe('contentDisposition.parse(string)', function () {
     })
 
     it('should parse UTF-8 extended parameter value', function () {
-      assert.deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf'), {
+      deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf'), {
         type: 'attachment',
         parameters: { 'filename': '€ rates.pdf' }
       })
     })
 
     it('should parse UTF-8 extended parameter value', function () {
-      assert.deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf'), {
+      deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf'), {
         type: 'attachment',
         parameters: { 'filename': '€ rates.pdf' }
       })
-      assert.deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'%E4%20rates.pdf'), {
+      deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'%E4%20rates.pdf'), {
         type: 'attachment',
         parameters: { 'filename': '\ufffd rates.pdf' }
       })
     })
 
     it('should parse ISO-8859-1 extended parameter value', function () {
-      assert.deepEqual(contentDisposition.parse('attachment; filename*=ISO-8859-1\'\'%A3%20rates.pdf'), {
+      deepEqual(contentDisposition.parse('attachment; filename*=ISO-8859-1\'\'%A3%20rates.pdf'), {
         type: 'attachment',
         parameters: { 'filename': '£ rates.pdf' }
       })
-      assert.deepEqual(contentDisposition.parse('attachment; filename*=ISO-8859-1\'\'%82%20rates.pdf'), {
+      deepEqual(contentDisposition.parse('attachment; filename*=ISO-8859-1\'\'%82%20rates.pdf'), {
         type: 'attachment',
         parameters: { 'filename': '? rates.pdf' }
       })
     })
 
     it('should not be case-sensitive for charser', function () {
-      assert.deepEqual(contentDisposition.parse('attachment; filename*=utf-8\'\'%E2%82%AC%20rates.pdf'), {
+      deepEqual(contentDisposition.parse('attachment; filename*=utf-8\'\'%E2%82%AC%20rates.pdf'), {
         type: 'attachment',
         parameters: { 'filename': '€ rates.pdf' }
       })
@@ -374,18 +375,18 @@ describe('contentDisposition.parse(string)', function () {
     })
 
     it('should parse with embedded language', function () {
-      assert.deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'en\'%E2%82%AC%20rates.pdf'), {
+      deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'en\'%E2%82%AC%20rates.pdf'), {
         type: 'attachment',
         parameters: { 'filename': '€ rates.pdf' }
       })
     })
 
     it('should prefer extended parameter value', function () {
-      assert.deepEqual(contentDisposition.parse('attachment; filename="EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf'), {
+      deepEqual(contentDisposition.parse('attachment; filename="EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf'), {
         type: 'attachment',
         parameters: { 'filename': '€ rates.pdf' }
       })
-      assert.deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf; filename="EURO rates.pdf"'), {
+      deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf; filename="EURO rates.pdf"'), {
         type: 'attachment',
         parameters: { 'filename': '€ rates.pdf' }
       })
@@ -395,7 +396,7 @@ describe('contentDisposition.parse(string)', function () {
   describe('from TC 2231', function () {
     describe('Disposition-Type Inline', function () {
       it('should parse "inline"', function () {
-        assert.deepEqual(contentDisposition.parse('inline'), {
+        deepEqual(contentDisposition.parse('inline'), {
           type: 'inline',
           parameters: {}
         })
@@ -407,21 +408,21 @@ describe('contentDisposition.parse(string)', function () {
       })
 
       it('should parse "inline; filename="foo.html""', function () {
-        assert.deepEqual(contentDisposition.parse('inline; filename="foo.html"'), {
+        deepEqual(contentDisposition.parse('inline; filename="foo.html"'), {
           type: 'inline',
           parameters: { filename: 'foo.html' }
         })
       })
 
       it('should parse "inline; filename="Not an attachment!""', function () {
-        assert.deepEqual(contentDisposition.parse('inline; filename="Not an attachment!"'), {
+        deepEqual(contentDisposition.parse('inline; filename="Not an attachment!"'), {
           type: 'inline',
           parameters: { filename: 'Not an attachment!' }
         })
       })
 
       it('should parse "inline; filename="foo.pdf""', function () {
-        assert.deepEqual(contentDisposition.parse('inline; filename="foo.pdf"'), {
+        deepEqual(contentDisposition.parse('inline; filename="foo.pdf"'), {
           type: 'inline',
           parameters: { filename: 'foo.pdf' }
         })
@@ -430,7 +431,7 @@ describe('contentDisposition.parse(string)', function () {
 
     describe('Disposition-Type Attachment', function () {
       it('should parse "attachment"', function () {
-        assert.deepEqual(contentDisposition.parse('attachment'), {
+        deepEqual(contentDisposition.parse('attachment'), {
           type: 'attachment',
           parameters: {}
         })
@@ -442,77 +443,77 @@ describe('contentDisposition.parse(string)', function () {
       })
 
       it('should parse "ATTACHMENT"', function () {
-        assert.deepEqual(contentDisposition.parse('ATTACHMENT'), {
+        deepEqual(contentDisposition.parse('ATTACHMENT'), {
           type: 'attachment',
           parameters: {}
         })
       })
 
       it('should parse "attachment; filename="foo.html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename="foo.html"'), {
+        deepEqual(contentDisposition.parse('attachment; filename="foo.html"'), {
           type: 'attachment',
           parameters: { filename: 'foo.html' }
         })
       })
 
       it('should parse "attachment; filename="0000000000111111111122222""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename="0000000000111111111122222"'), {
+        deepEqual(contentDisposition.parse('attachment; filename="0000000000111111111122222"'), {
           type: 'attachment',
           parameters: { filename: '0000000000111111111122222' }
         })
       })
 
       it('should parse "attachment; filename="00000000001111111111222222222233333""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename="00000000001111111111222222222233333"'), {
+        deepEqual(contentDisposition.parse('attachment; filename="00000000001111111111222222222233333"'), {
           type: 'attachment',
           parameters: { filename: '00000000001111111111222222222233333' }
         })
       })
 
       it('should parse "attachment; filename="f\\oo.html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename="f\\oo.html"'), {
+        deepEqual(contentDisposition.parse('attachment; filename="f\\oo.html"'), {
           type: 'attachment',
           parameters: { filename: 'foo.html' }
         })
       })
 
       it('should parse "attachment; filename="\\"quoting\\" tested.html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename="\\"quoting\\" tested.html"'), {
+        deepEqual(contentDisposition.parse('attachment; filename="\\"quoting\\" tested.html"'), {
           type: 'attachment',
           parameters: { filename: '"quoting" tested.html' }
         })
       })
 
       it('should parse "attachment; filename="Here\'s a semicolon;.html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename="Here\'s a semicolon;.html"'), {
+        deepEqual(contentDisposition.parse('attachment; filename="Here\'s a semicolon;.html"'), {
           type: 'attachment',
           parameters: { filename: 'Here\'s a semicolon;.html' }
         })
       })
 
       it('should parse "attachment; foo="bar"; filename="foo.html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; foo="bar"; filename="foo.html"'), {
+        deepEqual(contentDisposition.parse('attachment; foo="bar"; filename="foo.html"'), {
           type: 'attachment',
           parameters: { filename: 'foo.html', foo: 'bar' }
         })
       })
 
       it('should parse "attachment; foo="\\"\\\\";filename="foo.html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; foo="\\"\\\\";filename="foo.html"'), {
+        deepEqual(contentDisposition.parse('attachment; foo="\\"\\\\";filename="foo.html"'), {
           type: 'attachment',
           parameters: { filename: 'foo.html', foo: '"\\' }
         })
       })
 
       it('should parse "attachment; FILENAME="foo.html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; FILENAME="foo.html"'), {
+        deepEqual(contentDisposition.parse('attachment; FILENAME="foo.html"'), {
           type: 'attachment',
           parameters: { filename: 'foo.html' }
         })
       })
 
       it('should parse "attachment; filename=foo.html"', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename=foo.html'), {
+        deepEqual(contentDisposition.parse('attachment; filename=foo.html'), {
           type: 'attachment',
           parameters: { filename: 'foo.html' }
         })
@@ -539,70 +540,70 @@ describe('contentDisposition.parse(string)', function () {
       })
 
       it('should parse "attachment; filename=\'foo.bar\'', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename=\'foo.bar\''), {
+        deepEqual(contentDisposition.parse('attachment; filename=\'foo.bar\''), {
           type: 'attachment',
           parameters: { filename: '\'foo.bar\'' }
         })
       })
 
       it('should parse "attachment; filename="foo-ä.html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename="foo-ä.html"'), {
+        deepEqual(contentDisposition.parse('attachment; filename="foo-ä.html"'), {
           type: 'attachment',
           parameters: { filename: 'foo-ä.html' }
         })
       })
 
       it('should parse "attachment; filename="foo-Ã¤.html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename="foo-Ã¤.html"'), {
+        deepEqual(contentDisposition.parse('attachment; filename="foo-Ã¤.html"'), {
           type: 'attachment',
           parameters: { filename: 'foo-Ã¤.html' }
         })
       })
 
       it('should parse "attachment; filename="foo-%41.html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename="foo-%41.html"'), {
+        deepEqual(contentDisposition.parse('attachment; filename="foo-%41.html"'), {
           type: 'attachment',
           parameters: { filename: 'foo-%41.html' }
         })
       })
 
       it('should parse "attachment; filename="50%.html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename="50%.html"'), {
+        deepEqual(contentDisposition.parse('attachment; filename="50%.html"'), {
           type: 'attachment',
           parameters: { filename: '50%.html' }
         })
       })
 
       it('should parse "attachment; filename="foo-%\\41.html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename="foo-%\\41.html"'), {
+        deepEqual(contentDisposition.parse('attachment; filename="foo-%\\41.html"'), {
           type: 'attachment',
           parameters: { filename: 'foo-%41.html' }
         })
       })
 
       it('should parse "attachment; name="foo-%41.html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; name="foo-%41.html"'), {
+        deepEqual(contentDisposition.parse('attachment; name="foo-%41.html"'), {
           type: 'attachment',
           parameters: { name: 'foo-%41.html' }
         })
       })
 
       it('should parse "attachment; filename="ä-%41.html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename="ä-%41.html"'), {
+        deepEqual(contentDisposition.parse('attachment; filename="ä-%41.html"'), {
           type: 'attachment',
           parameters: { filename: 'ä-%41.html' }
         })
       })
 
       it('should parse "attachment; filename="foo-%c3%a4-%e2%82%ac.html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename="foo-%c3%a4-%e2%82%ac.html"'), {
+        deepEqual(contentDisposition.parse('attachment; filename="foo-%c3%a4-%e2%82%ac.html"'), {
           type: 'attachment',
           parameters: { filename: 'foo-%c3%a4-%e2%82%ac.html' }
         })
       })
 
       it('should parse "attachment; filename ="foo.html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename ="foo.html"'), {
+        deepEqual(contentDisposition.parse('attachment; filename ="foo.html"'), {
           type: 'attachment',
           parameters: { filename: 'foo.html' }
         })
@@ -709,21 +710,21 @@ describe('contentDisposition.parse(string)', function () {
       })
 
       it('should parse "attachment; xfilename=foo.html"', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; xfilename=foo.html'), {
+        deepEqual(contentDisposition.parse('attachment; xfilename=foo.html'), {
           type: 'attachment',
           parameters: { xfilename: 'foo.html' }
         })
       })
 
       it('should parse "attachment; filename="/foo.html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename="/foo.html"'), {
+        deepEqual(contentDisposition.parse('attachment; filename="/foo.html"'), {
           type: 'attachment',
           parameters: { filename: '/foo.html' }
         })
       })
 
       it('should parse "attachment; filename="\\\\foo.html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename="\\\\foo.html"'), {
+        deepEqual(contentDisposition.parse('attachment; filename="\\\\foo.html"'), {
           type: 'attachment',
           parameters: { filename: '\\foo.html' }
         })
@@ -732,14 +733,14 @@ describe('contentDisposition.parse(string)', function () {
 
     describe('Additional Parameters', function () {
       it('should parse "attachment; creation-date="Wed, 12 Feb 1997 16:29:51 -0500""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; creation-date="Wed, 12 Feb 1997 16:29:51 -0500"'), {
+        deepEqual(contentDisposition.parse('attachment; creation-date="Wed, 12 Feb 1997 16:29:51 -0500"'), {
           type: 'attachment',
           parameters: { 'creation-date': 'Wed, 12 Feb 1997 16:29:51 -0500' }
         })
       })
 
       it('should parse "attachment; modification-date="Wed, 12 Feb 1997 16:29:51 -0500""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; modification-date="Wed, 12 Feb 1997 16:29:51 -0500"'), {
+        deepEqual(contentDisposition.parse('attachment; modification-date="Wed, 12 Feb 1997 16:29:51 -0500"'), {
           type: 'attachment',
           parameters: { 'modification-date': 'Wed, 12 Feb 1997 16:29:51 -0500' }
         })
@@ -748,14 +749,14 @@ describe('contentDisposition.parse(string)', function () {
 
     describe('Disposition-Type Extension', function () {
       it('should parse "foobar"', function () {
-        assert.deepEqual(contentDisposition.parse('foobar'), {
+        deepEqual(contentDisposition.parse('foobar'), {
           type: 'foobar',
           parameters: {}
         })
       })
 
       it('should parse "attachment; example="filename=example.txt""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; example="filename=example.txt"'), {
+        deepEqual(contentDisposition.parse('attachment; example="filename=example.txt"'), {
           type: 'attachment',
           parameters: { example: 'filename=example.txt' }
         })
@@ -764,14 +765,14 @@ describe('contentDisposition.parse(string)', function () {
 
     describe('RFC 2231/5987 Encoding: Character Sets', function () {
       it('should parse "attachment; filename*=iso-8859-1\'\'foo-%E4.html"', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename*=iso-8859-1\'\'foo-%E4.html'), {
+        deepEqual(contentDisposition.parse('attachment; filename*=iso-8859-1\'\'foo-%E4.html'), {
           type: 'attachment',
           parameters: { filename: 'foo-ä.html' }
         })
       })
 
       it('should parse "attachment; filename*=UTF-8\'\'foo-%c3%a4-%e2%82%ac.html"', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'foo-%c3%a4-%e2%82%ac.html'), {
+        deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'foo-%c3%a4-%e2%82%ac.html'), {
           type: 'attachment',
           parameters: { filename: 'foo-ä-€.html' }
         })
@@ -783,21 +784,21 @@ describe('contentDisposition.parse(string)', function () {
       })
 
       it('should parse "attachment; filename*=UTF-8\'\'foo-a%cc%88.html"', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'foo-a%cc%88.html'), {
+        deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'foo-a%cc%88.html'), {
           type: 'attachment',
           parameters: { filename: 'foo-ä.html' }
         })
       })
 
       it('should parse "attachment; filename*=iso-8859-1\'\'foo-%c3%a4-%e2%82%ac.html"', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename*=iso-8859-1\'\'foo-%c3%a4-%e2%82%ac.html'), {
+        deepEqual(contentDisposition.parse('attachment; filename*=iso-8859-1\'\'foo-%c3%a4-%e2%82%ac.html'), {
           type: 'attachment',
           parameters: { filename: 'foo-Ã¤-â?¬.html' }
         })
       })
 
       it('should parse "attachment; filename*=utf-8\'\'foo-%E4.html"', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename*=utf-8\'\'foo-%E4.html'), {
+        deepEqual(contentDisposition.parse('attachment; filename*=utf-8\'\'foo-%E4.html'), {
           type: 'attachment',
           parameters: { filename: 'foo-\ufffd.html' }
         })
@@ -809,14 +810,14 @@ describe('contentDisposition.parse(string)', function () {
       })
 
       it('should parse "attachment; filename*= UTF-8\'\'foo-%c3%a4.html"', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename*= UTF-8\'\'foo-%c3%a4.html'), {
+        deepEqual(contentDisposition.parse('attachment; filename*= UTF-8\'\'foo-%c3%a4.html'), {
           type: 'attachment',
           parameters: { filename: 'foo-ä.html' }
         })
       })
 
       it('should parse "attachment; filename* =UTF-8\'\'foo-%c3%a4.html"', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename* =UTF-8\'\'foo-%c3%a4.html'), {
+        deepEqual(contentDisposition.parse('attachment; filename* =UTF-8\'\'foo-%c3%a4.html'), {
           type: 'attachment',
           parameters: { filename: 'foo-ä.html' }
         })
@@ -848,14 +849,14 @@ describe('contentDisposition.parse(string)', function () {
       })
 
       it('should parse "attachment; filename*=UTF-8\'\'A-%2541.html"', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'A-%2541.html'), {
+        deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'A-%2541.html'), {
           type: 'attachment',
           parameters: { filename: 'A-%41.html' }
         })
       })
 
       it('should parse "attachment; filename*=UTF-8\'\'%5cfoo.html"', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'%5cfoo.html'), {
+        deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'%5cfoo.html'), {
           type: 'attachment',
           parameters: { filename: '\\foo.html' }
         })
@@ -864,49 +865,49 @@ describe('contentDisposition.parse(string)', function () {
 
     describe('RFC2231 Encoding: Continuations', function () {
       it('should parse "attachment; filename*0="foo."; filename*1="html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename*0="foo."; filename*1="html"'), {
+        deepEqual(contentDisposition.parse('attachment; filename*0="foo."; filename*1="html"'), {
           type: 'attachment',
           parameters: { 'filename*0': 'foo.', 'filename*1': 'html' }
         })
       })
 
       it('should parse "attachment; filename*0="foo"; filename*1="\\b\\a\\r.html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename*0="foo"; filename*1="\\b\\a\\r.html"'), {
+        deepEqual(contentDisposition.parse('attachment; filename*0="foo"; filename*1="\\b\\a\\r.html"'), {
           type: 'attachment',
           parameters: { 'filename*0': 'foo', 'filename*1': 'bar.html' }
         })
       })
 
       it('should parse "attachment; filename*0*=UTF-8\'\'foo-%c3%a4; filename*1=".html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename*0*=UTF-8\'\'foo-%c3%a4; filename*1=".html"'), {
+        deepEqual(contentDisposition.parse('attachment; filename*0*=UTF-8\'\'foo-%c3%a4; filename*1=".html"'), {
           type: 'attachment',
           parameters: { 'filename*0*': 'UTF-8\'\'foo-%c3%a4', 'filename*1': '.html' }
         })
       })
 
       it('should parse "attachment; filename*0="foo"; filename*01="bar""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename*0="foo"; filename*01="bar"'), {
+        deepEqual(contentDisposition.parse('attachment; filename*0="foo"; filename*01="bar"'), {
           type: 'attachment',
           parameters: { 'filename*0': 'foo', 'filename*01': 'bar' }
         })
       })
 
       it('should parse "attachment; filename*0="foo"; filename*2="bar""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename*0="foo"; filename*2="bar"'), {
+        deepEqual(contentDisposition.parse('attachment; filename*0="foo"; filename*2="bar"'), {
           type: 'attachment',
           parameters: { 'filename*0': 'foo', 'filename*2': 'bar' }
         })
       })
 
       it('should parse "attachment; filename*1="foo."; filename*2="html""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename*1="foo."; filename*2="html"'), {
+        deepEqual(contentDisposition.parse('attachment; filename*1="foo."; filename*2="html"'), {
           type: 'attachment',
           parameters: { 'filename*1': 'foo.', 'filename*2': 'html' }
         })
       })
 
       it('should parse "attachment; filename*1="bar"; filename*0="foo""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename*1="bar"; filename*0="foo"'), {
+        deepEqual(contentDisposition.parse('attachment; filename*1="bar"; filename*0="foo"'), {
           type: 'attachment',
           parameters: { 'filename*1': 'bar', 'filename*0': 'foo' }
         })
@@ -915,28 +916,28 @@ describe('contentDisposition.parse(string)', function () {
 
     describe('RFC2231 Encoding: Fallback Behaviour', function () {
       it('should parse "attachment; filename="foo-ae.html"; filename*=UTF-8\'\'foo-%c3%a4.html"', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename="foo-ae.html"; filename*=UTF-8\'\'foo-%c3%a4.html'), {
+        deepEqual(contentDisposition.parse('attachment; filename="foo-ae.html"; filename*=UTF-8\'\'foo-%c3%a4.html'), {
           type: 'attachment',
           parameters: { filename: 'foo-ä.html' }
         })
       })
 
       it('should parse "attachment; filename*=UTF-8\'\'foo-%c3%a4.html; filename="foo-ae.html"', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'foo-%c3%a4.html; filename="foo-ae.html"'), {
+        deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'foo-%c3%a4.html; filename="foo-ae.html"'), {
           type: 'attachment',
           parameters: { filename: 'foo-ä.html' }
         })
       })
 
       it('should parse "attachment; filename*0*=ISO-8859-15\'\'euro-sign%3d%a4; filename*=ISO-8859-1\'\'currency-sign%3d%a4', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename*0*=ISO-8859-15\'\'euro-sign%3d%a4; filename*=ISO-8859-1\'\'currency-sign%3d%a4'), {
+        deepEqual(contentDisposition.parse('attachment; filename*0*=ISO-8859-15\'\'euro-sign%3d%a4; filename*=ISO-8859-1\'\'currency-sign%3d%a4'), {
           type: 'attachment',
           parameters: { filename: 'currency-sign=¤', 'filename*0*': 'ISO-8859-15\'\'euro-sign%3d%a4' }
         })
       })
 
       it('should parse "attachment; foobar=x; filename="foo.html"', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; foobar=x; filename="foo.html"'), {
+        deepEqual(contentDisposition.parse('attachment; foobar=x; filename="foo.html"'), {
           type: 'attachment',
           parameters: { filename: 'foo.html', foobar: 'x' }
         })
@@ -950,7 +951,7 @@ describe('contentDisposition.parse(string)', function () {
       })
 
       it('should parse "attachment; filename="=?ISO-8859-1?Q?foo-=E4.html?=""', function () {
-        assert.deepEqual(contentDisposition.parse('attachment; filename="=?ISO-8859-1?Q?foo-=E4.html?="'), {
+        deepEqual(contentDisposition.parse('attachment; filename="=?ISO-8859-1?Q?foo-=E4.html?="'), {
           type: 'attachment',
           parameters: { filename: '=?ISO-8859-1?Q?foo-=E4.html?=' }
         })
