@@ -19,30 +19,29 @@ module.exports.parse = parse
  * @private
  */
 
-var basename = require('path').basename
-var Buffer = require('safe-buffer').Buffer
+const { basename } = require('path')
 
 /**
  * RegExp to match non attr-char, *after* encodeURIComponent (i.e. not including "%")
  * @private
  */
 
-var ENCODE_URL_ATTR_CHAR_REGEXP = /[\x00-\x20"'()*,/:;<=>?@[\\\]{}\x7f]/g // eslint-disable-line no-control-regex
+const ENCODE_URL_ATTR_CHAR_REGEXP = /[\x00-\x20"'()*,/:;<=>?@[\\\]{}\x7f]/g // eslint-disable-line no-control-regex
 
 /**
  * RegExp to match percent encoding escape.
  * @private
  */
 
-var HEX_ESCAPE_REGEXP = /%[0-9A-Fa-f]{2}/
-var HEX_ESCAPE_REPLACE_REGEXP = /%([0-9A-Fa-f]{2})/g
+const HEX_ESCAPE_REGEXP = /%[0-9A-Fa-f]{2}/
+const HEX_ESCAPE_REPLACE_REGEXP = /%([0-9A-Fa-f]{2})/g
 
 /**
  * RegExp to match non-latin1 characters.
  * @private
  */
 
-var NON_LATIN1_REGEXP = /[^\x20-\x7e\xa0-\xff]/g
+const NON_LATIN1_REGEXP = /[^\x20-\x7e\xa0-\xff]/g
 
 /**
  * RegExp to match quoted-pair in RFC 2616
@@ -52,14 +51,14 @@ var NON_LATIN1_REGEXP = /[^\x20-\x7e\xa0-\xff]/g
  * @private
  */
 
-var QESC_REGEXP = /\\([\u0000-\u007f])/g // eslint-disable-line no-control-regex
+const QESC_REGEXP = /\\([\u0000-\u007f])/g // eslint-disable-line no-control-regex
 
 /**
  * RegExp to match chars that must be quoted-pair in RFC 2616
  * @private
  */
 
-var QUOTE_REGEXP = /([\\"])/g
+const QUOTE_REGEXP = /([\\"])/g
 
 /**
  * RegExp for various RFC 2616 grammar
@@ -86,9 +85,9 @@ var QUOTE_REGEXP = /([\\"])/g
  * @private
  */
 
-var PARAM_REGEXP = /;[\x09\x20]*([!#$%&'*+.0-9A-Z^_`a-z|~-]+)[\x09\x20]*=[\x09\x20]*("(?:[\x20!\x23-\x5b\x5d-\x7e\x80-\xff]|\\[\x20-\x7e])*"|[!#$%&'*+.0-9A-Z^_`a-z|~-]+)[\x09\x20]*/g // eslint-disable-line no-control-regex
-var TEXT_REGEXP = /^[\x20-\x7e\x80-\xff]+$/
-var TOKEN_REGEXP = /^[!#$%&'*+.0-9A-Z^_`a-z|~-]+$/
+const PARAM_REGEXP = /;[\x09\x20]*([!#$%&'*+.0-9A-Z^_`a-z|~-]+)[\x09\x20]*=[\x09\x20]*("(?:[\x20!\x23-\x5b\x5d-\x7e\x80-\xff]|\\[\x20-\x7e])*"|[!#$%&'*+.0-9A-Z^_`a-z|~-]+)[\x09\x20]*/g // eslint-disable-line no-control-regex
+const TEXT_REGEXP = /^[\x20-\x7e\x80-\xff]+$/
+const TOKEN_REGEXP = /^[!#$%&'*+.0-9A-Z^_`a-z|~-]+$/
 
 /**
  * RegExp for various RFC 5987 grammar
@@ -112,7 +111,7 @@ var TOKEN_REGEXP = /^[!#$%&'*+.0-9A-Z^_`a-z|~-]+$/
  * @private
  */
 
-var EXT_VALUE_REGEXP = /^([A-Za-z0-9!#$%&+\-^_`{}~]+)'(?:[A-Za-z]{2,3}(?:-[A-Za-z]{3}){0,3}|[A-Za-z]{4,8}|)'((?:%[0-9A-Fa-f]{2}|[A-Za-z0-9!#$&+.^_`|~-])+)$/
+const EXT_VALUE_REGEXP = /^([A-Za-z0-9!#$%&+\-^_`{}~]+)'(?:[A-Za-z]{2,3}(?:-[A-Za-z]{3}){0,3}|[A-Za-z]{4,8}|)'((?:%[0-9A-Fa-f]{2}|[A-Za-z0-9!#$&+.^_`|~-])+)$/
 
 /**
  * RegExp for various RFC 6266 grammar
@@ -128,7 +127,7 @@ var EXT_VALUE_REGEXP = /^([A-Za-z0-9!#$%&+\-^_`{}~]+)'(?:[A-Za-z]{2,3}(?:-[A-Za-
  * @private
  */
 
-var DISPOSITION_TYPE_REGEXP = /^([!#$%&'*+.0-9A-Z^_`a-z|~-]+)[\x09\x20]*(?:$|;)/ // eslint-disable-line no-control-regex
+const DISPOSITION_TYPE_REGEXP = /^([!#$%&'*+.0-9A-Z^_`a-z|~-]+)[\x09\x20]*(?:$|;)/ // eslint-disable-line no-control-regex
 
 /**
  * Create an attachment Content-Disposition header.
@@ -142,13 +141,13 @@ var DISPOSITION_TYPE_REGEXP = /^([!#$%&'*+.0-9A-Z^_`a-z|~-]+)[\x09\x20]*(?:$|;)/
  */
 
 function contentDisposition (filename, options) {
-  var opts = options || {}
+  const opts = options || {}
 
   // get type
-  var type = opts.type || 'attachment'
+  const type = opts.type || 'attachment'
 
   // get parameters
-  var params = createparams(filename, opts.fallback)
+  const params = createparams(filename, opts.fallback)
 
   // format into string
   return format(new ContentDisposition(type, params))
@@ -168,7 +167,7 @@ function createparams (filename, fallback) {
     return
   }
 
-  var params = {}
+  const params = {}
 
   if (typeof filename !== 'string') {
     throw new TypeError('filename must be a string')
@@ -188,16 +187,16 @@ function createparams (filename, fallback) {
   }
 
   // restrict to file base name
-  var name = basename(filename)
+  const name = basename(filename)
 
   // determine if name is suitable for quoted string
-  var isQuotedString = TEXT_REGEXP.test(name)
+  const isQuotedString = TEXT_REGEXP.test(name)
 
   // generate fallback name
-  var fallbackName = typeof fallback !== 'string'
+  const fallbackName = typeof fallback !== 'string'
     ? fallback && getlatin1(name)
     : basename(fallback)
-  var hasFallback = typeof fallbackName === 'string' && fallbackName !== name
+  const hasFallback = typeof fallbackName === 'string' && fallbackName !== name
 
   // set extended filename parameter
   if (hasFallback || !isQuotedString || HEX_ESCAPE_REGEXP.test(name)) {
@@ -225,25 +224,24 @@ function createparams (filename, fallback) {
  */
 
 function format (obj) {
-  var parameters = obj.parameters
-  var type = obj.type
+  const parameters = obj.parameters
+  const type = obj.type
 
   if (!type || typeof type !== 'string' || !TOKEN_REGEXP.test(type)) {
     throw new TypeError('invalid type')
   }
 
   // start with normalized type
-  var string = String(type).toLowerCase()
+  let string = String(type).toLowerCase()
 
   // append parameters
   if (parameters && typeof parameters === 'object') {
-    var param
-    var params = Object.keys(parameters).sort()
+    const params = Object.keys(parameters).sort()
 
-    for (var i = 0; i < params.length; i++) {
-      param = params[i]
+    for (let i = 0; i < params.length; i++) {
+      const param = params[i]
 
-      var val = param.substr(-1) === '*'
+      const val = param.substr(-1) === '*'
         ? ustring(parameters[param])
         : qstring(parameters[param])
 
@@ -263,18 +261,18 @@ function format (obj) {
  */
 
 function decodefield (str) {
-  var match = EXT_VALUE_REGEXP.exec(str)
+  const match = EXT_VALUE_REGEXP.exec(str)
 
   if (!match) {
     throw new TypeError('invalid extended field value')
   }
 
-  var charset = match[1].toLowerCase()
-  var encoded = match[2]
-  var value
+  const charset = match[1].toLowerCase()
+  const encoded = match[2]
+  let value
 
   // to binary string
-  var binary = encoded.replace(HEX_ESCAPE_REPLACE_REGEXP, pdecode)
+  const binary = encoded.replace(HEX_ESCAPE_REPLACE_REGEXP, pdecode)
 
   switch (charset) {
     case 'iso-8859-1':
@@ -316,20 +314,20 @@ function parse (string) {
     throw new TypeError('argument string is required')
   }
 
-  var match = DISPOSITION_TYPE_REGEXP.exec(string)
+  let match = DISPOSITION_TYPE_REGEXP.exec(string)
 
   if (!match) {
     throw new TypeError('invalid type format')
   }
 
   // normalize type
-  var index = match[0].length
-  var type = match[1].toLowerCase()
+  let index = match[0].length
+  const type = match[1].toLowerCase()
 
-  var key
-  var names = []
-  var params = {}
-  var value
+  let key
+  let value
+  const names = []
+  const params = {}
 
   // calculate index to start at
   index = PARAM_REGEXP.lastIndex = match[0].substr(-1) === ';'
@@ -420,7 +418,7 @@ function pencode (char) {
  */
 
 function qstring (val) {
-  var str = String(val)
+  const str = String(val)
 
   return '"' + str.replace(QUOTE_REGEXP, '\\$1') + '"'
 }
@@ -434,10 +432,10 @@ function qstring (val) {
  */
 
 function ustring (val) {
-  var str = String(val)
+  const str = String(val)
 
   // percent encode as UTF-8
-  var encoded = encodeURIComponent(str)
+  const encoded = encodeURIComponent(str)
     .replace(ENCODE_URL_ATTR_CHAR_REGEXP, pencode)
 
   return 'UTF-8\'\'' + encoded
