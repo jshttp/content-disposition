@@ -51,6 +51,8 @@ before_install:
       npm install --save-dev mocha@2.5.3
     elif [[ "$(cut -d. -f1 <<< "$TRAVIS_NODE_VERSION")" -lt 6 ]]; then
       npm install --save-dev mocha@3.5.3
+    elif [[ "$(cut -d. -f1 <<< "$TRAVIS_NODE_VERSION")" -lt 8 ]]; then
+      npm install --save-dev mocha@5.2.0
     fi
   # Update Node.js modules
   - |
