@@ -86,7 +86,7 @@ var QUOTE_REGEXP = /([\\"])/g
  * @private
  */
 
-var PARAM_REGEXP = /;[\x09\x20]*([!#$%&'*+.0-9A-Z^_`a-z|~-]+)[\x09\x20]*=[\x09\x20]*("(?:[\x20!\x23-\x5b\x5d-\x7e\x80-\xff]|\\[\x20-\x7e])*"|[!#$%&'*+.0-9A-Z^_`a-z|~-]+)[\x09\x20]*/g // eslint-disable-line no-control-regex
+var PARAM_REGEXP = /;[\x09\x20]*([!#$%&'*+.0-9A-Z^_`a-z|~-]+)[\x09\x20]*=[\x09\x20]*("(?:[\x20!\x23-\x5b\x5d-\x7e\x80-\xff]|\\[\x20-\x7e])*"|[!#$%&'*+.0-9A-Z^_`a-z|~-\s]+)[\x09\x20]*/g // eslint-disable-line no-control-regex
 var TEXT_REGEXP = /^[\x20-\x7e\x80-\xff]+$/
 var TOKEN_REGEXP = /^[!#$%&'*+.0-9A-Z^_`a-z|~-]+$/
 
@@ -372,8 +372,8 @@ function parse (string) {
         .substr(1, value.length - 2)
         .replace(QESC_REGEXP, '$1')
     }
-
-    params[key] = value
+    // decode value like: "%2B" means "+", it's very normal.
+    params[key] = decodeURIComponent(value)
   }
 
   if (index !== -1 && index !== string.length) {
