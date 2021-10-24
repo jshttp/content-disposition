@@ -336,36 +336,36 @@ describe('contentDisposition.parse(string)', function () {
     it('should parse UTF-8 extended parameter value', function () {
       deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf'), {
         type: 'attachment',
-        parameters: { 'filename': '€ rates.pdf' }
+        parameters: { filename: '€ rates.pdf' }
       })
     })
 
     it('should parse UTF-8 extended parameter value', function () {
       deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf'), {
         type: 'attachment',
-        parameters: { 'filename': '€ rates.pdf' }
+        parameters: { filename: '€ rates.pdf' }
       })
       deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'%E4%20rates.pdf'), {
         type: 'attachment',
-        parameters: { 'filename': '\ufffd rates.pdf' }
+        parameters: { filename: '\ufffd rates.pdf' }
       })
     })
 
     it('should parse ISO-8859-1 extended parameter value', function () {
       deepEqual(contentDisposition.parse('attachment; filename*=ISO-8859-1\'\'%A3%20rates.pdf'), {
         type: 'attachment',
-        parameters: { 'filename': '£ rates.pdf' }
+        parameters: { filename: '£ rates.pdf' }
       })
       deepEqual(contentDisposition.parse('attachment; filename*=ISO-8859-1\'\'%82%20rates.pdf'), {
         type: 'attachment',
-        parameters: { 'filename': '? rates.pdf' }
+        parameters: { filename: '? rates.pdf' }
       })
     })
 
     it('should not be case-sensitive for charser', function () {
       deepEqual(contentDisposition.parse('attachment; filename*=utf-8\'\'%E2%82%AC%20rates.pdf'), {
         type: 'attachment',
-        parameters: { 'filename': '€ rates.pdf' }
+        parameters: { filename: '€ rates.pdf' }
       })
     })
 
@@ -377,18 +377,18 @@ describe('contentDisposition.parse(string)', function () {
     it('should parse with embedded language', function () {
       deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'en\'%E2%82%AC%20rates.pdf'), {
         type: 'attachment',
-        parameters: { 'filename': '€ rates.pdf' }
+        parameters: { filename: '€ rates.pdf' }
       })
     })
 
     it('should prefer extended parameter value', function () {
       deepEqual(contentDisposition.parse('attachment; filename="EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf'), {
         type: 'attachment',
-        parameters: { 'filename': '€ rates.pdf' }
+        parameters: { filename: '€ rates.pdf' }
       })
       deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf; filename="EURO rates.pdf"'), {
         type: 'attachment',
-        parameters: { 'filename': '€ rates.pdf' }
+        parameters: { filename: '€ rates.pdf' }
       })
     })
   })
