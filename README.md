@@ -16,8 +16,6 @@ $ npm install content-disposition
 
 ## API
 
-<!-- eslint-disable no-unused-vars -->
-
 ```js
 var contentDisposition = require('content-disposition')
 ```
@@ -27,8 +25,6 @@ var contentDisposition = require('content-disposition')
 Create an attachment `Content-Disposition` header value using the given file name,
 if supplied. The `filename` is optional and if no file name is desired, but you
 want to specify `options`, set `filename` to `undefined`.
-
-<!-- eslint-disable no-undef -->
 
 ```js
 res.setHeader('Content-Disposition', contentDisposition('∫ maths.pdf'))
@@ -69,8 +65,6 @@ Specifies the disposition type, defaults to `"attachment"`. This can also be
 it). The type is normalized to lower-case.
 
 ### contentDisposition.parse(string)
-
-<!-- eslint-disable no-undef, no-unused-vars -->
 
 ```js
 var disposition = contentDisposition.parse('attachment; filename="EURO rates.txt"; filename*=UTF-8\'\'%e2%82%ac%20rates.txt')
