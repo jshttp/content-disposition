@@ -243,7 +243,7 @@ function format (obj) {
     for (var i = 0; i < params.length; i++) {
       param = params[i]
 
-      var val = param.substr(-1) === '*'
+      var val = param.slice(-1) === '*'
         ? ustring(parameters[param])
         : qstring(parameters[param])
 
@@ -332,7 +332,7 @@ function parse (string) {
   var value
 
   // calculate index to start at
-  index = PARAM_REGEXP.lastIndex = match[0].substr(-1) === ';'
+  index = PARAM_REGEXP.lastIndex = match[0].slice(-1) === ';'
     ? index - 1
     : index
 
@@ -369,7 +369,7 @@ function parse (string) {
     if (value[0] === '"') {
       // remove quotes and escapes
       value = value
-        .substr(1, value.length - 2)
+        .slice(1, -1)
         .replace(QESC_REGEXP, '$1')
     }
 
