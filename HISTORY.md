@@ -1,6 +1,7 @@
 unreleased
 ==================
 
+  * drop node <18
   * allow utf8 as alias for utf-8
 
 0.5.4 / 2021-12-10
