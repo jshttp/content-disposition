@@ -340,6 +340,13 @@ describe('contentDisposition.parse(string)', function () {
       }))
     })
 
+    it('should parse UTF8 extended parameter value', function () {
+      assert.deepEqual(contentDisposition.parse('attachment; filename*=utf8\'\'%E2%82%AC%20rates.pdf'), {
+        type: 'attachment',
+        parameters: { filename: '€ rates.pdf' }
+      })
+    })
+
     it('should parse UTF-8 extended parameter value', function () {
       assert.ok(deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf'), {
         type: 'attachment',
