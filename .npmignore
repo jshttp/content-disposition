@@ -1,0 +1,10 @@
+# Exclude test files
+test/
+src/**/*.spec.ts
+
+# Exclude TypeScript config files
+tsconfig.json
+tsconfig.build.json
+
+# Exclude node_modules
+node_modules/
