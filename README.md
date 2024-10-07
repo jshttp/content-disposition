@@ -1,4 +1,4 @@
-# content-disposition
+# content-disposition-parse
 
 [![NPM Version][npm-image]][npm-url]
 [![NPM Downloads][downloads-image]][downloads-url]
@@ -6,57 +6,19 @@
 [![Build Status][github-actions-ci-image]][github-actions-ci-url]
 [![Test Coverage][coveralls-image]][coveralls-url]
 
-Create and parse HTTP `Content-Disposition` header
+Parse HTTP `Content-Disposition` header
 
 ## Installation
 
 ```sh
-$ npm install content-disposition
+$ npm install content-disposition-parse
 ```
 
 ## API
 
 ```js
-var contentDisposition = require('content-disposition')
+let contentDisposition = require('content-disposition-parse')
 ```
-
-### contentDisposition(filename, options)
-
-Create an attachment `Content-Disposition` header value using the given file name,
-if supplied. The `filename` is optional and if no file name is desired, but you
-want to specify `options`, set `filename` to `undefined`.
-
-```js
-res.setHeader('Content-Disposition', contentDisposition('∫ maths.pdf'))
-```
-
-**note** HTTP headers are of the ISO-8859-1 character set. If you are writing this
-header through a means different from `setHeader` in Node.js, you'll want to specify
-the `'binary'` encoding in Node.js.
-
-#### Options
-
-`contentDisposition` accepts these properties in the options object.
-
-##### fallback
-
-If the `filename` option is outside ISO-8859-1, then the file name is actually
-stored in a supplemental field for clients that support Unicode file names and
-a ISO-8859-1 version of the file name is automatically generated.
-
-This specifies the ISO-8859-1 file name to override the automatic generation or
-disables the generation all together, defaults to `true`.
-
-  - A string will specify the ISO-8859-1 file name to use in place of automatic
-    generation.
-  - `false` will disable including a ISO-8859-1 file name and only include the
-    Unicode version (unless the file name is already ISO-8859-1).
-  - `true` will enable automatic generation if the file name is outside ISO-8859-1.
-
-If the `filename` option is ISO-8859-1 and this option is specified and has a
-different value, then the `filename` option is encoded in the extended field
-and this set as the fallback field, even though they are both ISO-8859-1.
-
 ##### type
 
 Specifies the disposition type, defaults to `"attachment"`. This can also be
@@ -67,7 +29,7 @@ it). The type is normalized to lower-case.
 ### contentDisposition.parse(string)
 
 ```js
-var disposition = contentDisposition.parse('attachment; filename="EURO rates.txt"; filename*=UTF-8\'\'%e2%82%ac%20rates.txt')
+let disposition = contentDisposition.parse('attachment; filename="EURO rates.txt"; filename*=UTF-8\'\'%e2%82%ac%20rates.txt')
 ```
 
 Parse a `Content-Disposition` header string. This automatically handles extended
@@ -83,36 +45,7 @@ are shown for the string `'attachment; filename="EURO rates.txt"; filename*=UTF-
 
 ## Examples
 
-### Send a file for download
-
-```js
-var contentDisposition = require('content-disposition')
-var destroy = require('destroy')
-var fs = require('fs')
-var http = require('http')
-var onFinished = require('on-finished')
-
-var filePath = '/path/to/public/plans.pdf'
-
-http.createServer(function onRequest (req, res) {
-  // set headers
-  res.setHeader('Content-Type', 'application/pdf')
-  res.setHeader('Content-Disposition', contentDisposition(filePath))
-
-  // send file
-  var stream = fs.createReadStream(filePath)
-  stream.pipe(res)
-  onFinished(res, function () {
-    destroy(stream)
-  })
-})
-```
-
-## Testing
-
-```sh
-$ npm test
-```
+ffffff
 
 ## References
 
@@ -130,13 +63,13 @@ $ npm test
 
 [MIT](LICENSE)
 
-[npm-image]: https://img.shields.io/npm/v/content-disposition.svg
-[npm-url]: https://npmjs.org/package/content-disposition
-[node-version-image]: https://img.shields.io/node/v/content-disposition.svg
+[npm-image]: https://img.shields.io/npm/v/content-disposition-parse.svg
+[npm-url]: https://npmjs.org/package/content-disposition-parse
+[node-version-image]: https://img.shields.io/node/v/content-disposition-parse.svg
 [node-version-url]: https://nodejs.org/en/download
-[coveralls-image]: https://img.shields.io/coveralls/jshttp/content-disposition.svg
-[coveralls-url]: https://coveralls.io/r/jshttp/content-disposition?branch=master
-[downloads-image]: https://img.shields.io/npm/dm/content-disposition.svg
-[downloads-url]: https://npmjs.org/package/content-disposition
-[github-actions-ci-image]: https://img.shields.io/github/workflow/status/jshttp/content-disposition/ci/master?label=ci
-[github-actions-ci-url]: https://github.com/jshttp/content-disposition?query=workflow%3Aci
+[coveralls-image]: https://img.shields.io/coveralls/jshttp/content-disposition-parse.svg
+[coveralls-url]: https://coveralls.io/r/jshttp/content-disposition-parse?branch=master
+[downloads-image]: https://img.shields.io/npm/dm/content-disposition-parse.svg
+[downloads-url]: https://npmjs.org/package/content-disposition-parse
+[github-actions-ci-image]: https://img.shields.io/github/workflow/status/jshttp/content-disposition-parse/ci/master?label=ci
+[github-actions-ci-url]: https://github.com/jshttp/content-disposition-parse?query=workflow%3Aci
