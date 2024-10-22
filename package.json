@@ -11,9 +11,6 @@
     "res"
   ],
   "repository": "jshttp/content-disposition",
-  "dependencies": {
-    "safe-buffer": "5.2.1"
-  },
   "devDependencies": {
     "deep-equal": "1.0.1",
     "eslint": "7.32.0",
