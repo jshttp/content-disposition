@@ -70,12 +70,7 @@ jobs:
 
     - name: Run tests
       shell: bash
-      run: |
-        if npm -ps ls nyc | grep -q nyc; then
-          npm run test-ci
-        else
-          npm test
-        fi
+      run: npm run test-ci
 
     - name: Lint code
       if: steps.list_env.outputs.eslint != ''
@@ -83,7 +78,6 @@ jobs:
 
     - name: Collect code coverage
       uses: coverallsapp/github-action@master
-      if: steps.list_env.outputs.nyc != ''
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         flag-name: run-${{ matrix.test_number }}
