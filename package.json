@@ -1,7 +1,7 @@
 {
   "name": "content-disposition",
   "description": "Create and parse Content-Disposition header",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Douglas Christopher Wilson <doug@somethingdoug.com>",
   "license": "MIT",
   "keywords": [
