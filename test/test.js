@@ -162,7 +162,7 @@ describe('contentDisposition(filename, options)', function () {
     })
 
     it('should require a valid type', function () {
-      assert.throws(contentDisposition.bind(null, undefined, { type: 'invlaid;type' }),
+      assert.throws(contentDisposition.bind(null, undefined, { type: 'invalid;type' }),
         /invalid type/)
     })
 
