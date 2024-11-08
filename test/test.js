@@ -162,7 +162,7 @@ describe('contentDisposition(filename, options)', function () {
     })
 
     it('should require a valid type', function () {
-      assert.throws(contentDisposition.bind(null, undefined, { type: 'invlaid;type' }),
+      assert.throws(contentDisposition.bind(null, undefined, { type: 'invalid;type' }),
         /invalid type/)
     })
 
@@ -369,7 +369,7 @@ describe('contentDisposition.parse(string)', function () {
       }))
     })
 
-    it('should not be case-sensitive for charser', function () {
+    it('should not be case-sensitive for charset', function () {
       assert.ok(deepEqual(contentDisposition.parse('attachment; filename*=utf-8\'\'%E2%82%AC%20rates.pdf'), {
         type: 'attachment',
         parameters: { filename: '€ rates.pdf' }
