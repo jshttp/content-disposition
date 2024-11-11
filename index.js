@@ -420,9 +420,9 @@ function pencode (char) {
  */
 
 function qstring (val) {
-  var str = String(val)
+  const str = String(val)
 
-  return '"' + str.replace(QUOTE_REGEXP, '\\$1') + '"'
+  return `"${str.replace(QUOTE_REGEXP, '\\$1')}"`
 }
 
 /**
