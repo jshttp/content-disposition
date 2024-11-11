@@ -140,14 +140,11 @@ var DISPOSITION_TYPE_REGEXP = /^([!#$%&'*+.0-9A-Z^_`a-z|~-]+)[\x09\x20]*(?:$|;)/
  * @public
  */
 
-function contentDisposition (filename, options) {
-  var opts = options || {}
-
-  // get type
-  var type = opts.type || 'attachment'
+function contentDisposition (filename, options = {}) {
+  const { type = 'attachment', fallback } = options
 
   // get parameters
-  var params = createparams(filename, opts.fallback)
+  const params = createparams(filename, fallback)
 
   // format into string
   return format(new ContentDisposition(type, params))
