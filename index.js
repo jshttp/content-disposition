@@ -434,13 +434,13 @@ function qstring (val) {
  */
 
 function ustring (val) {
-  var str = String(val)
+  const str = String(val)
 
   // percent encode as UTF-8
-  var encoded = encodeURIComponent(str)
+  const encoded = encodeURIComponent(str)
     .replace(ENCODE_URL_ATTR_CHAR_REGEXP, pencode)
 
-  return 'UTF-8\'\'' + encoded
+  return `UTF-8''${encoded}`
 }
 
 /**
