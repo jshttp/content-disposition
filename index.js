@@ -224,29 +224,25 @@ function createparams (filename, fallback) {
  */
 
 function format (obj) {
-  var parameters = obj.parameters
-  var type = obj.type
+  const { parameters, type } = obj
 
   if (!type || typeof type !== 'string' || !TOKEN_REGEXP.test(type)) {
     throw new TypeError('invalid type')
   }
 
   // start with normalized type
-  var string = String(type).toLowerCase()
+  let string = String(type).toLowerCase()
 
   // append parameters
   if (parameters && typeof parameters === 'object') {
-    var param
-    var params = Object.keys(parameters).sort()
+    const params = Object.keys(parameters).sort()
 
-    for (var i = 0; i < params.length; i++) {
-      param = params[i]
-
-      var val = param.slice(-1) === '*'
+    for (const param of params) {
+      const val = param.slice(-1) === '*'
         ? ustring(parameters[param])
         : qstring(parameters[param])
 
-      string += '; ' + param + '=' + val
+      string += `; ${param}=${val}`
     }
   }
 
