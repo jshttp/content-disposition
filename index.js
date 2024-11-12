@@ -258,24 +258,24 @@ function format (obj) {
  *
  * @param {string} str
  * @return {string}
+ * @throws {TypeError}
  * @private
  */
 
 function decodefield (str) {
-  var match = EXT_VALUE_REGEXP.exec(str)
+  const match = EXT_VALUE_REGEXP.exec(str)
 
   if (!match) {
     throw new TypeError('invalid extended field value')
   }
 
-  var charset = match[1].toLowerCase()
-  var encoded = match[2]
-  var value
+  const [, charset, encoded] = match
+  let value
 
   // to binary string
-  var binary = encoded.replace(HEX_ESCAPE_REPLACE_REGEXP, pdecode)
+  const binary = encoded.replace(HEX_ESCAPE_REPLACE_REGEXP, pdecode)
 
-  switch (charset) {
+  switch (charset.toLowerCase()) {
     case 'iso-8859-1':
       value = getlatin1(binary)
       break
