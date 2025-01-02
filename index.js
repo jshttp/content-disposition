@@ -19,7 +19,7 @@ module.exports.parse = parse
  * @private
  */
 
-var basename = path => path.split(/[\\/]/).pop()
+var basename = path => (path ?? '').replace(/[\\/]+$/, '').split(/[\\/]/).pop();
 
 /**
  * RegExp to match non attr-char, *after* encodeURIComponent (i.e. not including "%")
