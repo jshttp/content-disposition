@@ -1,5 +1,7 @@
-unreleased
+1.0.1 / 2024-11-06
 =================
+
+  * Updated `engines` field to Node@18 or higher
   * Remove dependency `safe-buffer`
 
 1.0.0 / 2024-08-31
