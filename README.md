@@ -17,7 +17,7 @@ $ npm install content-disposition
 ## API
 
 ```js
-var contentDisposition = require('content-disposition')
+const contentDisposition = require('content-disposition')
 ```
 
 ### contentDisposition(filename, options)
@@ -67,7 +67,7 @@ it). The type is normalized to lower-case.
 ### contentDisposition.parse(string)
 
 ```js
-var disposition = contentDisposition.parse('attachment; filename="EURO rates.txt"; filename*=UTF-8\'\'%e2%82%ac%20rates.txt')
+const disposition = contentDisposition.parse('attachment; filename="EURO rates.txt"; filename*=UTF-8\'\'%e2%82%ac%20rates.txt')
 ```
 
 Parse a `Content-Disposition` header string. This automatically handles extended
@@ -86,13 +86,13 @@ are shown for the string `'attachment; filename="EURO rates.txt"; filename*=UTF-
 ### Send a file for download
 
 ```js
-var contentDisposition = require('content-disposition')
-var destroy = require('destroy')
-var fs = require('fs')
-var http = require('http')
-var onFinished = require('on-finished')
+const contentDisposition = require('content-disposition')
+const destroy = require('destroy')
+const fs = require('fs')
+const http = require('http')
+const onFinished = require('on-finished')
 
-var filePath = '/path/to/public/plans.pdf'
+const filePath = '/path/to/public/plans.pdf'
 
 http.createServer(function onRequest (req, res) {
   // set headers
@@ -100,7 +100,7 @@ http.createServer(function onRequest (req, res) {
   res.setHeader('Content-Disposition', contentDisposition(filePath))
 
   // send file
-  var stream = fs.createReadStream(filePath)
+  const stream = fs.createReadStream(filePath)
   stream.pipe(res)
   onFinished(res, function () {
     destroy(stream)
