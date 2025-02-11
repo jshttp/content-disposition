@@ -1,3 +1,8 @@
+unreleased
+=================
+
+  * refactor: use simplified `basename` function and remove dependency on `node:path`
+
 1.0.1 / 2025-11-18
 =================
 
