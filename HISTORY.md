@@ -1,6 +1,7 @@
 unreleased
 =================
   * Remove dependency `safe-buffer`
+  * refactor: use simplified `basename` function and remove dependency on `node:path`
 
 1.0.0 / 2024-08-31
 ==================
