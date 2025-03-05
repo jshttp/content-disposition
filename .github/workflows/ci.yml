@@ -56,7 +56,6 @@ jobs:
         echo "NPM version: $(npm -v)"
 
     - name: Run tests
-      shell: bash
       run: npm run test-ci
 
     - name: Upload code coverage
