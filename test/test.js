@@ -19,8 +19,48 @@ describe('contentDisposition(filename)', function () {
       'attachment; filename="plans.pdf"')
   })
 
-  it('should use the basename of the string', function () {
+  it('should use the basename of a posix path', function () {
     assert.strictEqual(contentDisposition('/path/to/plans.pdf'),
+      'attachment; filename="plans.pdf"')
+  })
+
+  it('should use the basename of a windows path', function () {
+    assert.strictEqual(contentDisposition('\\path\\to\\plans.pdf'),
+      'attachment; filename="plans.pdf"')
+  })
+
+  it('should use the basename of a windows path with drive letter', function () {
+    assert.strictEqual(contentDisposition('C:\\path\\to\\plans.pdf'),
+      'attachment; filename="plans.pdf"')
+  })
+
+  it('should use the basename of a posix path with trailing slash', function () {
+    assert.strictEqual(contentDisposition('/path/to/plans.pdf/'),
+      'attachment; filename="plans.pdf"')
+  })
+
+  it('should use the basename of a windows path with trailing slash', function () {
+    assert.strictEqual(contentDisposition('\\path\\to\\plans.pdf\\'),
+      'attachment; filename="plans.pdf"')
+  })
+
+  it('should use the basename of a windows path with drive letter and trailing slash', function () {
+    assert.strictEqual(contentDisposition('C:\\path\\to\\plans.pdf\\'),
+      'attachment; filename="plans.pdf"')
+  })
+
+  it('should use the basename of a posix path with trailing slashes', function () {
+    assert.strictEqual(contentDisposition('/path/to/plans.pdf///'),
+      'attachment; filename="plans.pdf"')
+  })
+
+  it('should use the basename of a windows path with trailing slashes', function () {
+    assert.strictEqual(contentDisposition('\\path\\to\\plans.pdf\\\\\\'),
+      'attachment; filename="plans.pdf"')
+  })
+
+  it('should use the basename of a windows path with drive letter and trailing slashes', function () {
+    assert.strictEqual(contentDisposition('C:\\path\\to\\plans.pdf\\\\\\'),
       'attachment; filename="plans.pdf"')
   })
 
@@ -137,8 +177,18 @@ describe('contentDisposition(filename, options)', function () {
           'attachment; filename="plans.pdf"')
       })
 
-      it('should use the basename of the string', function () {
+      it('should use the basename of a posix path', function () {
         assert.strictEqual(contentDisposition('€ rates.pdf', { fallback: '/path/to/EURO rates.pdf' }),
+          'attachment; filename="EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf')
+      })
+
+      it('should use the basename of a windows path', function () {
+        assert.strictEqual(contentDisposition('€ rates.pdf', { fallback: '\\path\\to\\EURO rates.pdf' }),
+          'attachment; filename="EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf')
+      })
+
+      it('should use the basename of a windows path with drive letter', function () {
+        assert.strictEqual(contentDisposition('€ rates.pdf', { fallback: 'C:\\path\\to\\EURO rates.pdf' }),
           'attachment; filename="EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf')
       })
 
