@@ -103,7 +103,7 @@ var TOKEN_REGEXP = /^[!#$%&'*+.0-9A-Z^_`a-z|~-]+$/
  * language      = <Language-Tag as defined in RFC 5646, Section 2.1>
  *                 (Optional: the two literal single quotes MUST appear,
  *                 but the language field inside them may be empty.
- *                 We ignoring the language content rather than validate it)
+ *                 We are ignoring the language content rather than validate it)
  *
  * value-chars   = *( pct-encoded / attr-char )
  * pct-encoded   = "%" HEXDIG HEXDIG
