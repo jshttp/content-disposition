@@ -5,6 +5,7 @@
 [![Node.js Version][node-version-image]][node-version-url]
 [![Build Status][github-actions-ci-image]][github-actions-ci-url]
 [![Test Coverage][coveralls-image]][coveralls-url]
+[![OpenSSF Scorecard Badge][ossf-scorecard-badge]][ossf-scorecard-visualizer]
 
 Create and parse HTTP `Content-Disposition` header
 
@@ -140,3 +141,5 @@ $ npm test
 [downloads-url]: https://npmjs.org/package/content-disposition
 [github-actions-ci-image]: https://img.shields.io/github/actions/workflow/status/jshttp/content-disposition/ci.yml
 [github-actions-ci-url]: https://github.com/jshttp/content-disposition/actions/workflows/ci.yml
+[ossf-scorecard-badge]: https://api.scorecard.dev/projects/github.com/jshttp/content-disposition/badge
+[ossf-scorecard-visualizer]: https://ossf.github.io/scorecard-visualizer/#/projects/github.com/jshttp/content-disposition
