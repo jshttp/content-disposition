@@ -15,13 +15,6 @@ module.exports = contentDisposition
 module.exports.parse = parse
 
 /**
- * Module dependencies.
- * @private
- */
-
-var basename = require('path').basename
-
-/**
  * RegExp to match non attr-char, *after* encodeURIComponent (i.e. not including "%")
  * @private
  */
@@ -455,4 +448,25 @@ function ustring (val) {
 function ContentDisposition (type, parameters) {
   this.type = type
   this.parameters = parameters
+}
+
+/**
+  * Return the last portion of a path
+  *
+  * @param {string} path
+  * @returns {string}
+  */
+function basename (path) {
+  const segments = path.replaceAll('\\', '/').split('/')
+
+  let lastSegment = ''
+  for (let idx = segments.length - 1; idx >= 0; idx--) {
+    const val = segments[idx]
+    if (val) {
+      lastSegment = val
+      break
+    }
+  }
+
+  return lastSegment
 }
