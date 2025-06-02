@@ -27,9 +27,6 @@
     "README.md",
     "index.js"
   ],
-  "engines": {
-    "node": ">=18"
-  },
   "scripts": {
     "lint": "eslint .",
     "test": "node --test --test-reporter spec",
