@@ -11,6 +11,10 @@
     "res"
   ],
   "repository": "jshttp/content-disposition",
+  "funding": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/express"
+  },
   "devDependencies": {
     "c8": "^10.1.2",
     "eslint": "7.32.0",
