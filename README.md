@@ -87,7 +87,6 @@ are shown for the string `'attachment; filename="EURO rates.txt"; filename*=UTF-
 
 ```js
 const contentDisposition = require('content-disposition')
-const destroy = require('destroy')
 const fs = require('fs')
 const http = require('http')
 const onFinished = require('on-finished')
@@ -103,7 +102,7 @@ http.createServer(function onRequest (req, res) {
   const stream = fs.createReadStream(filePath)
   stream.pipe(res)
   onFinished(res, function () {
-    destroy(stream)
+    stream.destroy()
   })
 })
 ```
