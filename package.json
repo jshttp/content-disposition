@@ -26,9 +26,6 @@
     "eslint-plugin-standard": "4.1.0"
   },
   "files": [
-    "LICENSE",
-    "HISTORY.md",
-    "README.md",
     "index.js"
   ],
   "engines": {
