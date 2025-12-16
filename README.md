@@ -121,9 +121,9 @@ $ npm test
 - [RFC 6266: Use of the Content-Disposition Header Field in the Hypertext Transfer Protocol (HTTP)][rfc-6266]
 - [Test Cases for HTTP Content-Disposition header field (RFC 6266) and the Encodings defined in RFCs 2047, 2231 and 5987][tc-2231]
 
-[rfc-2616]: https://tools.ietf.org/html/rfc2616
-[rfc-5987]: https://tools.ietf.org/html/rfc5987
-[rfc-6266]: https://tools.ietf.org/html/rfc6266
+[rfc-2616]: https://datatracker.ietf.org/doc/html/rfc2616
+[rfc-5987]: https://datatracker.ietf.org/doc/html/rfc5987
+[rfc-6266]: https://datatracker.ietf.org/doc/html/rfc6266
 [tc-2231]: http://greenbytes.de/tech/tc2231/
 
 ## License
@@ -131,12 +131,12 @@ $ npm test
 [MIT](LICENSE)
 
 [npm-image]: https://img.shields.io/npm/v/content-disposition
-[npm-url]: https://npmjs.org/package/content-disposition
+[npm-url]: https://www.npmjs.com/package/content-disposition
 [node-version-image]: https://img.shields.io/node/v/content-disposition
 [node-version-url]: https://nodejs.org/en/download
 [coveralls-image]: https://img.shields.io/coverallsCoverage/github/jshttp/content-disposition
-[coveralls-url]: https://coveralls.io/r/jshttp/content-disposition?branch=master
+[coveralls-url]: https://coveralls.io/github/jshttp/content-disposition?branch=master
 [downloads-image]: https://img.shields.io/npm/dm/content-disposition
-[downloads-url]: https://npmjs.org/package/content-disposition
+[downloads-url]: https://www.npmjs.com/package/content-disposition
 [github-actions-ci-image]: https://img.shields.io/github/actions/workflow/status/jshttp/content-disposition/ci.yml
 [github-actions-ci-url]: https://github.com/jshttp/content-disposition/actions/workflows/ci.yml
