@@ -30,6 +30,23 @@ jobs:
 
       - name: Lint code
         run: npm run lint
+        
+  test-types:
+    name: Test Types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 'lts/*'
+
+      - name: Install Node.js dependencies
+        run: npm install --ignore-scripts --include=dev
+
+      - name: Test Types
+        run: npm run test-types
 
   test:    
     name: Test - Node.js ${{ matrix.node-version }}
