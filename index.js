@@ -22,6 +22,12 @@ module.exports.parse = parse
 var basename = require('path').basename
 
 /**
+ * TextDecoder instance for UTF-8 decoding (when globalThis.Buffer is unavailable).
+ * @private
+ */
+var utf8Decoder
+
+/**
  * RegExp to match non attr-char, *after* encodeURIComponent (i.e. not including "%")
  * @private
  */
@@ -281,7 +287,7 @@ function decodefield (str) {
       break
     case 'utf-8':
     case 'utf8':
-      value = Buffer.from(binary, 'binary').toString('utf8')
+      value = decodeUtf8(binary)
       break
     default:
       throw new TypeError('unsupported charset in extended field')
@@ -301,6 +307,28 @@ function decodefield (str) {
 function getlatin1 (val) {
   // simple Unicode -> ISO-8859-1 transformation
   return String(val).replace(NON_LATIN1_REGEXP, '?')
+}
+
+/**
+ * Decode binary string to UTF-8.
+ *
+ * @param {string} binary
+ * @return {string}
+ * @private
+ */
+function decodeUtf8 (binary) {
+  if (typeof globalThis.Buffer !== 'undefined') {
+    return globalThis.Buffer.from(binary, 'binary').toString('utf8')
+  } else if (typeof globalThis.TextDecoder === 'function') {
+    utf8Decoder ??= new TextDecoder('utf-8')
+
+    var bytes = new Uint8Array(binary.length)
+    for (var idx = 0; idx < binary.length; idx++) {
+      bytes[idx] = binary.charCodeAt(idx)
+    }
+    return utf8Decoder.decode(bytes)
+  }
+  throw new Error('UTF-8 decoding is not supported in this environment')
 }
 
 /**

@@ -4,6 +4,10 @@ extends:
   - plugin:markdown/recommended
 plugins:
   - markdown
+parserOptions:
+  ecmaVersion: 2021
+globals:
+  globalThis: readonly
 overrides:
   - files: '**/*.md'
     processor: 'markdown/markdown'
