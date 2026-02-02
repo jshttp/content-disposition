@@ -1,6 +1,6 @@
 var assert = require('assert')
 var contentDisposition = require('..')
-var { describe, it } = require('node:test')
+var { afterEach, beforeEach, describe, it } = require('node:test')
 
 describe('contentDisposition()', function () {
   it('should create an attachment header', function () {
@@ -446,6 +446,79 @@ describe('contentDisposition.parse(string)', function () {
         type: 'attachment',
         parameters: { filename: '€ rates.pdf' }
       })
+    })
+
+    describe('when Buffer is unavailable', function () {
+      let originalBuffer
+      let freshContentDisposition
+
+      beforeEach(function () {
+        originalBuffer = Buffer
+
+        // Make Buffer unavailable before*loading the module
+        delete global.Buffer
+        assert.strictEqual(typeof Buffer, 'undefined')
+
+        // Force Node to reload the module (and re-run its top-level init)
+        const entry = require.resolve('..')
+        delete require.cache[entry]
+        freshContentDisposition = require('..')
+      })
+
+      afterEach(function () {
+        global.Buffer = originalBuffer
+        const entry = require.resolve('..')
+        delete require.cache[entry]
+      })
+
+      it('should parse UTF-8 extended parameter value with TextDecoder', function () {
+        var result = freshContentDisposition.parse('attachment; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf')
+        assert.deepEqual(result, {
+          type: 'attachment',
+          parameters: { filename: '€ rates.pdf' }
+        })
+      })
+
+      it('should parse UTF-8 extended parameter value (single symbol) with TextDecoder', function () {
+        var result = freshContentDisposition.parse('attachment; filename*=UTF-8\'\'%E2%82%AC.pdf')
+        assert.strictEqual(result.parameters.filename, '€.pdf')
+      })
+
+      it('should parse UTF-8 extended parameter value (multi-byte) with TextDecoder', function () {
+        // Japanese text: "こんにちは" (hello)
+        var result = freshContentDisposition.parse('attachment; filename*=UTF-8\'\'%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF.pdf')
+        assert.strictEqual(result.parameters.filename, 'こんにちは.pdf')
+      })
+    })
+
+    it('should throw an error when UTF-8 decoding is not supported', function () {
+      const originalBuffer = Buffer
+      const originalTextDecoder = TextDecoder
+
+      // Make both unavailable
+      delete global.Buffer
+      delete global.TextDecoder
+
+      assert.strictEqual(typeof Buffer, 'undefined')
+      assert.strictEqual(typeof TextDecoder, 'undefined')
+
+      // Fresh-load the module under these conditions
+      const entry = require.resolve('..')
+      delete require.cache[entry]
+      const freshContentDisposition = require('..')
+
+      try {
+        assert.throws(
+          function () {
+            freshContentDisposition.parse('attachment; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf')
+          },
+          /UTF-8 decoding is not supported in this environment/
+        )
+      } finally {
+        global.Buffer = originalBuffer
+        global.TextDecoder = originalTextDecoder
+        delete require.cache[entry]
+      }
     })
   })
 

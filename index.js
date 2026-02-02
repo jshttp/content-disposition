@@ -15,6 +15,13 @@ module.exports = contentDisposition
 module.exports.parse = parse
 
 /**
+ * TextDecoder instance for UTF-8 decoding (when globalThis.Buffer is unavailable).
+ * @type {TextDecoder}
+ * @private
+ */
+let utf8Decoder
+
+/**
  * RegExp to match non attr-char, *after* encodeURIComponent (i.e. not including "%")
  * @private
  */
@@ -274,7 +281,7 @@ function decodefield (str) {
       break
     case 'utf-8':
     case 'utf8':
-      value = Buffer.from(binary, 'binary').toString('utf8')
+      value = decodeUtf8(binary)
       break
     default:
       throw new TypeError('unsupported charset in extended field')
@@ -295,6 +302,30 @@ function getlatin1 (val) {
   // simple Unicode -> ISO-8859-1 transformation
   return String(val).replace(NON_LATIN1_REGEXP, '?')
 }
+
+/**
+ * Decode binary string to UTF-8.
+ *
+ * @param {string} binary
+ * @return {string}
+ * @private
+ */
+const decodeUtf8 =
+  typeof Buffer !== 'undefined'
+    ? (binary) => Buffer.from(binary, 'binary').toString('utf8')
+    : typeof TextDecoder === 'function'
+      ? (binary) => {
+        utf8Decoder ??= new TextDecoder('utf-8')
+
+        const bytes = new Uint8Array(binary.length)
+        for (let idx = 0; idx < binary.length; idx++) {
+          bytes[idx] = binary.charCodeAt(idx)
+        }
+        return utf8Decoder.decode(bytes)
+      }
+      : () => {
+        throw new Error('UTF-8 decoding is not supported in this environment')
+      }
 
 /**
  * Parse Content-Disposition header string.
