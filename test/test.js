@@ -1,6 +1,6 @@
 var assert = require('assert')
 var contentDisposition = require('..')
-var { describe, it } = require('node:test')
+var { afterEach, beforeEach, describe, it } = require('node:test')
 
 describe('contentDisposition()', function () {
   it('should create an attachment header', function () {
@@ -396,6 +396,59 @@ describe('contentDisposition.parse(string)', function () {
         type: 'attachment',
         parameters: { filename: '€ rates.pdf' }
       })
+    })
+
+    describe('when Buffer is unavailable', function () {
+      var originalBuffer
+
+      beforeEach(function () {
+        // Simulate Buffer being unavailable
+        originalBuffer = globalThis.Buffer
+        globalThis.Buffer = undefined
+
+        assert.strictEqual(typeof globalThis.Buffer, 'undefined')
+      })
+
+      afterEach(function () {
+        // Restore original Buffer
+        globalThis.Buffer = originalBuffer
+      })
+
+      it('should parse UTF-8 extended parameter value with TextDecoder', function () {
+        var result = contentDisposition.parse('attachment; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf')
+        assert.deepEqual(result, {
+          type: 'attachment',
+          parameters: { filename: '€ rates.pdf' }
+        })
+      })
+
+      it('should parse UTF-8 extended parameter value (single symbol) with TextDecoder', function () {
+        var result = contentDisposition.parse('attachment; filename*=UTF-8\'\'%E2%82%AC.pdf')
+        assert.strictEqual(result.parameters.filename, '€.pdf')
+      })
+
+      it('should parse UTF-8 extended parameter value (multi-byte) with TextDecoder', function () {
+        // Japanese text: "こんにちは" (hello)
+        var result = contentDisposition.parse('attachment; filename*=UTF-8\'\'%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF.pdf')
+        assert.strictEqual(result.parameters.filename, 'こんにちは.pdf')
+      })
+    })
+
+    it('should throw an error when UTF-8 decoding is not supported', function () {
+      var originalBuffer = globalThis.Buffer
+      var originalTextDecoder = globalThis.TextDecoder
+      globalThis.Buffer = undefined
+      globalThis.TextDecoder = undefined
+
+      assert.strictEqual(typeof globalThis.Buffer, 'undefined')
+      assert.strictEqual(typeof globalThis.TextDecoder, 'undefined')
+
+      try {
+        assert.throws(() => contentDisposition.parse('attachment; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf'), /UTF-8 decoding is not supported in this environment/)
+      } finally {
+        globalThis.Buffer = originalBuffer
+        globalThis.TextDecoder = originalTextDecoder
+      }
     })
   })
 
