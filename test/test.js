@@ -64,6 +64,16 @@ describe('contentDisposition(filename)', function () {
       'attachment; filename="plans.pdf"')
   })
 
+  it('should use the basename of a posix path with only slashes', function () {
+    assert.strictEqual(contentDisposition('///'),
+      'attachment; filename*=UTF-8\'\'')
+  })
+
+  it('should use the basename of a windows path with only slashes', function () {
+    assert.strictEqual(contentDisposition('\\\\\\'),
+      'attachment; filename*=UTF-8\'\'')
+  })
+
   describe('when "filename" is US-ASCII', function () {
     it('should only include filename parameter', function () {
       assert.strictEqual(contentDisposition('plans.pdf'),
