@@ -15,11 +15,11 @@ module.exports = contentDisposition
 module.exports.parse = parse
 
 /**
- * TextDecoder instance for UTF-8 decoding (when globalThis.Buffer is unavailable).
+ * TextDecoder instance for UTF-8 decoding when decodeURIComponent fails due to invalid byte sequences.
  * @type {TextDecoder}
  * @private
  */
-let utf8Decoder
+const utf8Decoder = new TextDecoder('utf-8')
 
 /**
  * RegExp to match non attr-char, *after* encodeURIComponent (i.e. not including "%")
@@ -284,7 +284,6 @@ function decodefield (str) {
           bytes[idx] = binary.charCodeAt(idx)
         }
 
-        utf8Decoder ??= new TextDecoder('utf-8')
         return utf8Decoder.decode(bytes)
       }
     }
