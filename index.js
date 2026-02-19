@@ -15,6 +15,13 @@ module.exports = contentDisposition
 module.exports.parse = parse
 
 /**
+ * TextDecoder instance for UTF-8 decoding (when globalThis.Buffer is unavailable).
+ * @type {TextDecoder}
+ * @private
+ */
+let utf8Decoder
+
+/**
  * RegExp to match non attr-char, *after* encodeURIComponent (i.e. not including "%")
  * @private
  */
@@ -268,10 +275,17 @@ function decodefield (str) {
       try {
         return decodeURIComponent(encoded)
       } catch {
-        // Failed to decode with decodeURIComponent, fallback to manual decoding which currently accepts any hex escapes and ignores invalid ones
+        // Failed to decode with decodeURIComponent, fallback to lenient decoding which replaces invalid UTF-8 byte sequences with the Unicode replacement character
         // TODO: Consider removing in the next major version to be more strict about invalid percent-encodings
         const binary = decodeHexEscapes(encoded)
-        return Buffer.from(binary, 'binary').toString('utf8')
+
+        const bytes = new Uint8Array(binary.length)
+        for (let idx = 0; idx < binary.length; idx++) {
+          bytes[idx] = binary.charCodeAt(idx)
+        }
+
+        utf8Decoder ??= new TextDecoder('utf-8')
+        return utf8Decoder.decode(bytes)
       }
     }
   }
