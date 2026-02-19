@@ -496,14 +496,15 @@ function isHexDigit (char) {
  * @private
  */
 function hasHexEscape (str) {
-  const firstEscape = str.indexOf('%')
-  if (firstEscape === -1) return false
+  const maxIndex = str.length - 3
+  let lastIndex = -1
 
-  for (let idx = firstEscape; idx < str.length - 2; idx++) {
-    if (str[idx] === '%' && isHexDigit(str[idx + 1]) && isHexDigit(str[idx + 2])) {
+  while ((lastIndex = str.indexOf('%', lastIndex + 1)) !== -1 && lastIndex <= maxIndex) {
+    if (isHexDigit(str[lastIndex + 1]) && isHexDigit(str[lastIndex + 2])) {
       return true
     }
   }
+
   return false
 }
 
