@@ -1,80 +1,26 @@
 name: CI
-
 on:
-  push:
-  pull_request:
-
+  - push
+  - pull_request
 permissions:
   contents: read
-
 jobs:
-  checks:
-    name: Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 'lts/*'
-      - run: npm install
-      - run: npm run lint
-      - run: npm run format:check
-      - run: npm run typecheck
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 'lts/*'
-      - run: npm install
-      - run: npm run build
-
   test:
-    name: Test - Node.js ${{ matrix.node-version }}
+    name: Node.js ${{ matrix.node-version }}
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
-        # Node.js release schedule: https://nodejs.org/en/about/releases/
-        node-version: [18, 19, 20, 21, 22, 23, 24, 25]
+        node-version:
+          - '18'
+          - '*'
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm install
-      - name: Output Node and NPM versions
-        run: |
-          echo "Node.js version: $(node -v)"
-          echo "NPM version: $(npm -v)"
-      - run: npm run test:ci
-      - name: Upload code coverage
-        uses: actions/upload-artifact@v5
+      - run: npm test
+      - uses: codecov/codecov-action@v5
         with:
-          name: coverage-node-${{ matrix.node-version }}
-          path: ./coverage/lcov.info
-          retention-days: 1
-
-  coverage:
-    name: Coverage
-    needs: test
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      checks: write
-    steps:
-      - uses: actions/checkout@v6
-      - run: sudo apt-get -y install lcov
-      - name: Collect coverage reports
-        uses: actions/download-artifact@v6
-        with:
-          path: ./coverage
-          pattern: coverage-node-*
-      - name: Merge coverage reports
-        run: find ./coverage -name lcov.info -exec printf '-a %q\n' {} \; | xargs lcov -o ./lcov.info
-      - uses: coverallsapp/github-action@v2
-        with:
-          file: ./lcov.info
+          name: Node.js ${{ matrix.node-version }}
+          token: ${{ secrets.CODECOV_TOKEN }}

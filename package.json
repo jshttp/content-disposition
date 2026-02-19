@@ -31,14 +31,14 @@
   ],
   "scripts": {
     "build": "tsdown",
+    "check": "prettier --check . && tsc && npm run lint",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
     "lint": "eslint .",
     "prepare": "husky",
-    "test": "vitest",
-    "test:ci": "vitest --coverage  --coverage.include=src/** --coverage.reporter text --coverage.reporter=lcovonly",
-    "test:cov": "vitest --coverage --coverage.include=src/**",
-    "typecheck": "tsc --noEmit"
+    "specs": "vitest run",
+    "specs:ci": "vitest run --coverage  --coverage.include=src/** --coverage.reporter text --coverage.reporter=lcovonly",
+    "specs:cov": "vitest run --coverage --coverage.include=src/**",
+    "test": "npm run build && npm run check && npm run specs:ci"
   },
   "devDependencies": {
     "@arethetypeswrong/core": "^0.18.2",
