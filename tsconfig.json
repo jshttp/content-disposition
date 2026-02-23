@@ -7,7 +7,7 @@
     "module": "preserve",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
-    "types": ["node"],
+    "types": ["./textdecoder.d.ts"],
     "strict": true,
     "noUnusedLocals": true,
     "declaration": true,
