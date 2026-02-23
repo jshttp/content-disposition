@@ -20,7 +20,7 @@ function contentDisposition(
   const params = createparams(filename, options?.fallback);
 
   // format into string
-  return contentDisposition.format(new ContentDispositionImpl(type, params));
+  return format(new ContentDispositionImpl(type, params));
 }
 
 namespace contentDisposition {
@@ -46,11 +46,6 @@ namespace contentDisposition {
      * @default true
      */
     fallback?: string | boolean;
-  }
-
-  export interface FormatOptions {
-    type: string;
-    parameters?: Record<string, unknown>;
   }
 
   /**
@@ -125,44 +120,11 @@ namespace contentDisposition {
 
     return obj;
   }
+}
 
-  /**
-   * Format object to Content-Disposition header.
-   */
-  export function format(obj: FormatOptions): string {
-    if (!obj || typeof obj !== 'object') {
-      throw new TypeError('argument obj is required');
-    }
-
-    if (
-      !obj.type ||
-      typeof obj.type !== 'string' ||
-      !TOKEN_REGEXP.test(obj.type)
-    ) {
-      throw new TypeError('invalid type');
-    }
-
-    // start with normalized type
-    let string = obj.type.toLowerCase();
-
-    // append parameters
-    if (obj.parameters && typeof obj.parameters === 'object') {
-      const params = Object.keys(obj.parameters).sort();
-
-      for (let i = 0; i < params.length; i++) {
-        const param = params[i];
-
-        const val =
-          param.slice(-1) === '*'
-            ? ustring(obj.parameters[param])
-            : qstring(obj.parameters[param]);
-
-        string += `; ${param}=${val}`;
-      }
-    }
-
-    return string;
-  }
+interface FormatOptions {
+  type: string;
+  parameters?: Record<string, unknown>;
 }
 
 /**
@@ -348,6 +310,44 @@ function decodefield(str: string): string {
   }
 
   throw new TypeError('unsupported charset in extended field');
+}
+
+/**
+ * Format object to Content-Disposition header.
+ */
+function format(obj: FormatOptions): string {
+  if (!obj || typeof obj !== 'object') {
+    throw new TypeError('argument obj is required');
+  }
+
+  if (
+    !obj.type ||
+    typeof obj.type !== 'string' ||
+    !TOKEN_REGEXP.test(obj.type)
+  ) {
+    throw new TypeError('invalid type');
+  }
+
+  // start with normalized type
+  let string = obj.type.toLowerCase();
+
+  // append parameters
+  if (obj.parameters && typeof obj.parameters === 'object') {
+    const params = Object.keys(obj.parameters).sort();
+
+    for (let i = 0; i < params.length; i++) {
+      const param = params[i];
+
+      const val =
+        param.slice(-1) === '*'
+          ? ustring(obj.parameters[param])
+          : qstring(obj.parameters[param]);
+
+      string += `; ${param}=${val}`;
+    }
+  }
+
+  return string;
 }
 
 /**
