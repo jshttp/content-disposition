@@ -5,15 +5,14 @@
  */
 
 /**
+ * TextDecoder instance for UTF-8 decoding when decodeURIComponent fails due to invalid byte sequences.
+ */
+const utf8Decoder = new TextDecoder('utf-8');
+
+/**
  * RegExp to match non attr-char, *after* encodeURIComponent (i.e. not including "%")
  */
 const ENCODE_URL_ATTR_CHAR_REGEXP = /[\x00-\x20"'()*,/:;<=>?@[\\\]{}\x7f]/g; // eslint-disable-line no-control-regex
-
-/**
- * RegExp to match percent encoding escape.
- */
-const HEX_ESCAPE_REGEXP = /%[0-9A-Fa-f]{2}/;
-const HEX_ESCAPE_REPLACE_REGEXP = /%([0-9A-Fa-f]{2})/g;
 
 /**
  * RegExp to match non-latin1 characters.
@@ -184,7 +183,7 @@ function createparams(
   const hasFallback = typeof fallbackName === 'string' && fallbackName !== name;
 
   // set extended filename parameter
-  if (hasFallback || !isQuotedString || HEX_ESCAPE_REGEXP.test(name)) {
+  if (hasFallback || !isQuotedString || hasHexEscape(name)) {
     params['filename*'] = name;
   }
 
@@ -246,24 +245,32 @@ function decodefield(str: string): string {
 
   const charset = match[1].toLowerCase();
   const encoded = match[2];
-  let value;
-
-  // to binary string
-  const binary = encoded.replace(HEX_ESCAPE_REPLACE_REGEXP, pdecode);
 
   switch (charset) {
-    case 'iso-8859-1':
-      value = getlatin1(binary);
-      break;
+    case 'iso-8859-1': {
+      const binary = decodeHexEscapes(encoded);
+      return getlatin1(binary);
+    }
     case 'utf-8':
-    case 'utf8':
-      value = Buffer.from(binary, 'binary').toString('utf8');
-      break;
-    default:
-      throw new TypeError('unsupported charset in extended field');
+    case 'utf8': {
+      try {
+        return decodeURIComponent(encoded);
+      } catch {
+        // Failed to decode with decodeURIComponent, fallback to lenient decoding which replaces invalid UTF-8 byte sequences with the Unicode replacement character
+        // TODO: Consider removing in the next major version to be more strict about invalid percent-encodings
+        const binary = decodeHexEscapes(encoded);
+
+        const bytes = new Uint8Array(binary.length);
+        for (let idx = 0; idx < binary.length; idx++) {
+          bytes[idx] = binary.charCodeAt(idx);
+        }
+
+        return utf8Decoder.decode(bytes);
+      }
+    }
   }
 
-  return value;
+  throw new TypeError('unsupported charset in extended field');
 }
 
 /**
@@ -348,13 +355,6 @@ export function parse(string: string): ContentDisposition {
 }
 
 /**
- * Percent decode a single character.
- */
-function pdecode(str: string, hex: string): string {
-  return String.fromCharCode(parseInt(hex, 16));
-}
-
-/**
  * Percent encode a single character.
  */
 function pencode(char: string): string {
@@ -425,4 +425,61 @@ function basename(path: string): string {
   }
 
   return normalized.slice(start + 1, end);
+}
+
+/**
+ * Check if a character is a hex digit [0-9A-Fa-f]
+ */
+function isHexDigit(char: string): boolean {
+  const code = char.charCodeAt(0);
+  return (
+    (code >= 48 && code <= 57) || // 0-9
+    (code >= 65 && code <= 70) || // A-F
+    (code >= 97 && code <= 102) // a-f
+  );
+}
+
+/**
+ * Check if a string contains percent encoding escapes.
+ */
+function hasHexEscape(str: string): boolean {
+  const maxIndex = str.length - 3;
+  let lastIndex = -1;
+
+  while (
+    (lastIndex = str.indexOf('%', lastIndex + 1)) !== -1 &&
+    lastIndex <= maxIndex
+  ) {
+    if (isHexDigit(str[lastIndex + 1]) && isHexDigit(str[lastIndex + 2])) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Decode hex escapes in a string (e.g., %20 -> space)
+ */
+function decodeHexEscapes(str: string): string {
+  const firstEscape = str.indexOf('%');
+  if (firstEscape === -1) return str;
+
+  let result = str.slice(0, firstEscape);
+  for (let idx = firstEscape; idx < str.length; idx++) {
+    if (
+      str[idx] === '%' &&
+      idx + 2 < str.length &&
+      isHexDigit(str[idx + 1]) &&
+      isHexDigit(str[idx + 2])
+    ) {
+      result += String.fromCharCode(
+        Number.parseInt(str[idx + 1] + str[idx + 2], 16),
+      );
+      idx += 2;
+    } else {
+      result += str[idx];
+    }
+  }
+  return result;
 }
