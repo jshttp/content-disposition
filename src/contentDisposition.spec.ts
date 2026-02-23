@@ -1,80 +1,83 @@
 import { describe, it, assert } from 'vitest';
-import { create } from '../src';
+import contentDisposition from './index';
 
 describe('create()', function () {
   it('should create an attachment header', function () {
-    assert.strictEqual(create(), 'attachment');
+    assert.strictEqual(contentDisposition(), 'attachment');
   });
 });
 
 describe('create(filename)', function () {
   it('should require a string', function () {
-    assert.throws(create.bind(null, 42 as any), /filename.*string/);
+    assert.throws(contentDisposition.bind(null, 42 as any), /filename.*string/);
   });
 
   it('should create a header with file name', function () {
-    assert.strictEqual(create('plans.pdf'), 'attachment; filename="plans.pdf"');
+    assert.strictEqual(
+      contentDisposition('plans.pdf'),
+      'attachment; filename="plans.pdf"',
+    );
   });
 
   it('should use the basename of a posix path', function () {
     assert.strictEqual(
-      create('/path/to/plans.pdf'),
+      contentDisposition('/path/to/plans.pdf'),
       'attachment; filename="plans.pdf"',
     );
   });
 
   it('should use the basename of a windows path', function () {
     assert.strictEqual(
-      create('\\path\\to\\plans.pdf'),
+      contentDisposition('\\path\\to\\plans.pdf'),
       'attachment; filename="plans.pdf"',
     );
   });
 
   it('should use the basename of a windows path with drive letter', function () {
     assert.strictEqual(
-      create('C:\\path\\to\\plans.pdf'),
+      contentDisposition('C:\\path\\to\\plans.pdf'),
       'attachment; filename="plans.pdf"',
     );
   });
 
   it('should use the basename of a posix path with trailing slash', function () {
     assert.strictEqual(
-      create('/path/to/plans.pdf/'),
+      contentDisposition('/path/to/plans.pdf/'),
       'attachment; filename="plans.pdf"',
     );
   });
 
   it('should use the basename of a windows path with trailing slash', function () {
     assert.strictEqual(
-      create('\\path\\to\\plans.pdf\\'),
+      contentDisposition('\\path\\to\\plans.pdf\\'),
       'attachment; filename="plans.pdf"',
     );
   });
 
   it('should use the basename of a windows path with drive letter and trailing slash', function () {
     assert.strictEqual(
-      create('C:\\path\\to\\plans.pdf\\'),
+      contentDisposition('C:\\path\\to\\plans.pdf\\'),
       'attachment; filename="plans.pdf"',
     );
   });
 
   it('should use the basename of a posix path with trailing slashes', function () {
     assert.strictEqual(
-      create('/path/to/plans.pdf///'),
+      contentDisposition('/path/to/plans.pdf///'),
       'attachment; filename="plans.pdf"',
     );
   });
 
   it('should use the basename of a windows path with trailing slashes', function () {
     assert.strictEqual(
-      create('\\path\\to\\plans.pdf\\\\\\'),
+      contentDisposition('\\path\\to\\plans.pdf\\\\\\'),
       'attachment; filename="plans.pdf"',
     );
   });
 
   it('should use the basename of a windows path with drive letter and trailing slashes', function () {
     assert.strictEqual(
-      create('C:\\path\\to\\plans.pdf\\\\\\'),
+      contentDisposition('C:\\path\\to\\plans.pdf\\\\\\'),
       'attachment; filename="plans.pdf"',
     );
   });
@@ -82,14 +85,14 @@ describe('create(filename)', function () {
   describe('when "filename" is US-ASCII', function () {
     it('should only include filename parameter', function () {
       assert.strictEqual(
-        create('plans.pdf'),
+        contentDisposition('plans.pdf'),
         'attachment; filename="plans.pdf"',
       );
     });
 
     it('should escape quotes', function () {
       assert.strictEqual(
-        create('the "plans".pdf'),
+        contentDisposition('the "plans".pdf'),
         'attachment; filename="the \\"plans\\".pdf"',
       );
     });
@@ -98,14 +101,14 @@ describe('create(filename)', function () {
   describe('when "filename" is ISO-8859-1', function () {
     it('should only include filename parameter', function () {
       assert.strictEqual(
-        create('«plans».pdf'),
+        contentDisposition('«plans».pdf'),
         'attachment; filename="«plans».pdf"',
       );
     });
 
     it('should escape quotes', function () {
       assert.strictEqual(
-        create('the "plans" (1µ).pdf'),
+        contentDisposition('the "plans" (1µ).pdf'),
         'attachment; filename="the \\"plans\\" (1µ).pdf"',
       );
     });
@@ -114,25 +117,25 @@ describe('create(filename)', function () {
   describe('when "filename" is Unicode', function () {
     it('should include filename* parameter', function () {
       assert.strictEqual(
-        create('планы.pdf'),
+        contentDisposition('планы.pdf'),
         'attachment; filename="?????.pdf"; filename*=UTF-8\'\'%D0%BF%D0%BB%D0%B0%D0%BD%D1%8B.pdf',
       );
     });
 
     it('should include filename fallback', function () {
       assert.strictEqual(
-        create('£ and € rates.pdf'),
+        contentDisposition('£ and € rates.pdf'),
         'attachment; filename="£ and ? rates.pdf"; filename*=UTF-8\'\'%C2%A3%20and%20%E2%82%AC%20rates.pdf',
       );
       assert.strictEqual(
-        create('€ rates.pdf'),
+        contentDisposition('€ rates.pdf'),
         'attachment; filename="? rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf',
       );
     });
 
     it('should encode special characters', function () {
       assert.strictEqual(
-        create("€'*%().pdf"),
+        contentDisposition("€'*%().pdf"),
         "attachment; filename=\"?'*%().pdf\"; filename*=UTF-8''%E2%82%AC%27%2A%25%28%29.pdf",
       );
     });
@@ -141,14 +144,14 @@ describe('create(filename)', function () {
   describe('when "filename" contains hex escape', function () {
     it('should include filename* parameter', function () {
       assert.strictEqual(
-        create('the%20plans.pdf'),
+        contentDisposition('the%20plans.pdf'),
         'attachment; filename="the%20plans.pdf"; filename*=UTF-8\'\'the%2520plans.pdf',
       );
     });
 
     it('should handle Unicode', function () {
       assert.strictEqual(
-        create('€%20£.pdf'),
+        contentDisposition('€%20£.pdf'),
         'attachment; filename="?%20£.pdf"; filename*=UTF-8\'\'%E2%82%AC%2520%C2%A3.pdf',
       );
     });
@@ -159,14 +162,14 @@ describe('create(filename, options)', function () {
   describe('with "fallback" option', function () {
     it('should require a string or Boolean', function () {
       assert.throws(
-        create.bind(null, 'plans.pdf', { fallback: 42 } as any),
+        contentDisposition.bind(null, 'plans.pdf', { fallback: 42 } as any),
         /fallback.*string/,
       );
     });
 
     it('should default to true', function () {
       assert.strictEqual(
-        create('€ rates.pdf'),
+        contentDisposition('€ rates.pdf'),
         'attachment; filename="? rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf',
       );
     });
@@ -174,14 +177,14 @@ describe('create(filename, options)', function () {
     describe('when "false"', function () {
       it('should not generate ISO-8859-1 fallback', function () {
         assert.strictEqual(
-          create('£ and € rates.pdf', { fallback: false }),
+          contentDisposition('£ and € rates.pdf', { fallback: false }),
           "attachment; filename*=UTF-8''%C2%A3%20and%20%E2%82%AC%20rates.pdf",
         );
       });
 
       it('should keep ISO-8859-1 filename', function () {
         assert.strictEqual(
-          create('£ rates.pdf', { fallback: false }),
+          contentDisposition('£ rates.pdf', { fallback: false }),
           'attachment; filename="£ rates.pdf"',
         );
       });
@@ -190,14 +193,14 @@ describe('create(filename, options)', function () {
     describe('when "true"', function () {
       it('should generate ISO-8859-1 fallback', function () {
         assert.strictEqual(
-          create('£ and € rates.pdf', { fallback: true }),
+          contentDisposition('£ and € rates.pdf', { fallback: true }),
           'attachment; filename="£ and ? rates.pdf"; filename*=UTF-8\'\'%C2%A3%20and%20%E2%82%AC%20rates.pdf',
         );
       });
 
       it('should pass through ISO-8859-1 filename', function () {
         assert.strictEqual(
-          create('£ rates.pdf', { fallback: true }),
+          contentDisposition('£ rates.pdf', { fallback: true }),
           'attachment; filename="£ rates.pdf"',
         );
       });
@@ -206,56 +209,66 @@ describe('create(filename, options)', function () {
     describe('when a string', function () {
       it('should require an ISO-8859-1 string', function () {
         assert.throws(
-          create.bind(null, '€ rates.pdf', { fallback: '€ rates.pdf' }),
+          contentDisposition.bind(null, '€ rates.pdf', {
+            fallback: '€ rates.pdf',
+          }),
           /fallback.*iso-8859-1/i,
         );
       });
 
       it('should use as ISO-8859-1 fallback', function () {
         assert.strictEqual(
-          create('£ and € rates.pdf', { fallback: '£ and EURO rates.pdf' }),
+          contentDisposition('£ and € rates.pdf', {
+            fallback: '£ and EURO rates.pdf',
+          }),
           'attachment; filename="£ and EURO rates.pdf"; filename*=UTF-8\'\'%C2%A3%20and%20%E2%82%AC%20rates.pdf',
         );
       });
 
       it('should use as fallback even when filename is ISO-8859-1', function () {
         assert.strictEqual(
-          create('"£ rates".pdf', { fallback: '£ rates.pdf' }),
+          contentDisposition('"£ rates".pdf', { fallback: '£ rates.pdf' }),
           'attachment; filename="£ rates.pdf"; filename*=UTF-8\'\'%22%C2%A3%20rates%22.pdf',
         );
       });
 
       it('should do nothing if equal to filename', function () {
         assert.strictEqual(
-          create('plans.pdf', { fallback: 'plans.pdf' }),
+          contentDisposition('plans.pdf', { fallback: 'plans.pdf' }),
           'attachment; filename="plans.pdf"',
         );
       });
 
       it('should use the basename of a posix path', function () {
         assert.strictEqual(
-          create('€ rates.pdf', { fallback: '/path/to/EURO rates.pdf' }),
+          contentDisposition('€ rates.pdf', {
+            fallback: '/path/to/EURO rates.pdf',
+          }),
           'attachment; filename="EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf',
         );
       });
 
       it('should use the basename of a windows path', function () {
         assert.strictEqual(
-          create('€ rates.pdf', { fallback: '\\path\\to\\EURO rates.pdf' }),
+          contentDisposition('€ rates.pdf', {
+            fallback: '\\path\\to\\EURO rates.pdf',
+          }),
           'attachment; filename="EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf',
         );
       });
 
       it('should use the basename of a windows path with drive letter', function () {
         assert.strictEqual(
-          create('€ rates.pdf', { fallback: 'C:\\path\\to\\EURO rates.pdf' }),
+          contentDisposition('€ rates.pdf', {
+            fallback: 'C:\\path\\to\\EURO rates.pdf',
+          }),
           'attachment; filename="EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf',
         );
       });
 
       it('should do nothing without filename option', function () {
         assert.strictEqual(
-          create(undefined, { fallback: 'plans.pdf' }),
+          contentDisposition(undefined, { fallback: 'plans.pdf' }),
           'attachment',
         );
       });
@@ -264,36 +277,42 @@ describe('create(filename, options)', function () {
 
   describe('with "type" option', function () {
     it('should default to attachment', function () {
-      assert.strictEqual(create(), 'attachment');
+      assert.strictEqual(contentDisposition(), 'attachment');
     });
 
     it('should require a string', function () {
       assert.throws(
-        create.bind(null, undefined, { type: 42 } as any),
+        contentDisposition.bind(null, undefined, { type: 42 } as any),
         /invalid type/,
       );
     });
 
     it('should require a valid type', function () {
       assert.throws(
-        create.bind(null, undefined, { type: 'invalid;type' }),
+        contentDisposition.bind(null, undefined, { type: 'invalid;type' }),
         /invalid type/,
       );
     });
 
     it('should create a header with inline type', function () {
-      assert.strictEqual(create(undefined, { type: 'inline' }), 'inline');
+      assert.strictEqual(
+        contentDisposition(undefined, { type: 'inline' }),
+        'inline',
+      );
     });
 
     it('should create a header with inline type & filename', function () {
       assert.strictEqual(
-        create('plans.pdf', { type: 'inline' }),
+        contentDisposition('plans.pdf', { type: 'inline' }),
         'inline; filename="plans.pdf"',
       );
     });
 
     it('should normalize type', function () {
-      assert.strictEqual(create(undefined, { type: 'INLINE' }), 'inline');
+      assert.strictEqual(
+        contentDisposition(undefined, { type: 'INLINE' }),
+        'inline',
+      );
     });
   });
 });

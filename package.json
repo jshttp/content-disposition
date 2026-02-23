@@ -15,47 +15,36 @@
   },
   "license": "MIT",
   "author": "Douglas Christopher Wilson <doug@somethingdoug.com>",
-  "type": "module",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    },
-    "./package.json": "./package.json"
-  },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.cts",
+  "type": "commonjs",
+  "exports": "./dist/index.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "files": [
-    "dist"
+    "dist/"
   ],
   "scripts": {
-    "build": "tsdown",
-    "check": "prettier --check . && tsc && npm run lint",
-    "format": "prettier --write .",
-    "lint": "eslint .",
-    "prepare": "husky",
-    "specs": "vitest run",
-    "specs:ci": "vitest run --coverage  --coverage.include=src/** --coverage.reporter text --coverage.reporter=lcovonly",
-    "specs:cov": "vitest run --coverage --coverage.include=src/**",
-    "test": "npm run build && npm run check && npm run specs:ci"
+    "build": "ts-scripts build",
+    "format": "ts-scripts format",
+    "lint": "ts-scripts lint",
+    "prepare": "ts-scripts install && npm run build",
+    "specs": "ts-scripts specs",
+    "test": "ts-scripts test"
   },
   "devDependencies": {
-    "@arethetypeswrong/core": "^0.18.2",
-    "@eslint/js": "^9.39.2",
+    "@borderless/ts-scripts": "^0.15.0",
     "@vitest/coverage-v8": "^3.2.4",
-    "eslint": "^9.39.2",
-    "husky": "^9.1.7",
-    "prettier": "^3.8.1",
-    "prettier-plugin-packagejson": "^3.0.0",
-    "pretty-quick": "^4.2.2",
-    "publint": "^0.3.17",
-    "tsdown": "^0.20.3",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.55.0",
     "vitest": "^3.2.4"
   },
   "engines": {
     "node": ">=18"
+  },
+  "ts-scripts": {
+    "dist": [
+      "dist"
+    ],
+    "project": [
+      "tsconfig.build.json"
+    ]
   }
 }

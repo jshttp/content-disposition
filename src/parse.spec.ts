@@ -1,5 +1,5 @@
 import { describe, it, assert } from 'vitest';
-import { parse } from '../src';
+import { parse } from './index';
 
 describe('parse(string)', function () {
   it('should require string', function () {

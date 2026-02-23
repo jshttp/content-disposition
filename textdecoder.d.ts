@@ -54,3 +54,8 @@ interface TextDecoderCommon {
    */
   readonly ignoreBOM: boolean;
 }
+
+// eslint-disable-next-line no-var
+declare var module: {
+  exports: unknown;
+};
