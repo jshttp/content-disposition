@@ -1,9 +1,7 @@
 {
   "name": "content-disposition",
-  "description": "Create and parse Content-Disposition header",
   "version": "1.0.1",
-  "author": "Douglas Christopher Wilson <doug@somethingdoug.com>",
-  "license": "MIT",
+  "description": "Create and parse Content-Disposition header",
   "keywords": [
     "content-disposition",
     "http",
@@ -15,26 +13,38 @@
     "type": "opencollective",
     "url": "https://opencollective.com/express"
   },
-  "devDependencies": {
-    "c8": "^10.1.2",
-    "eslint": "^8.57.1",
-    "eslint-config-standard": "^14.1.1",
-    "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-markdown": "^3.0.1",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-promise": "^6.6.0",
-    "eslint-plugin-standard": "^4.1.0"
-  },
+  "license": "MIT",
+  "author": "Douglas Christopher Wilson <doug@somethingdoug.com>",
+  "type": "commonjs",
+  "exports": "./dist/index.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "files": [
-    "index.js"
+    "dist/"
   ],
+  "scripts": {
+    "build": "ts-scripts build",
+    "format": "ts-scripts format",
+    "lint": "ts-scripts lint",
+    "prepare": "ts-scripts install && npm run build",
+    "specs": "ts-scripts specs",
+    "test": "ts-scripts test"
+  },
+  "devDependencies": {
+    "@borderless/ts-scripts": "^0.15.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  },
   "engines": {
     "node": ">=18"
   },
-  "scripts": {
-    "lint": "eslint .",
-    "test": "node --test --test-reporter spec",
-    "test-ci": "c8 --reporter=lcovonly --reporter=text npm test",
-    "test-cov": "c8 --reporter=html --reporter=text npm test"
+  "ts-scripts": {
+    "dist": [
+      "dist"
+    ],
+    "project": [
+      "tsconfig.build.json"
+    ]
   }
 }
