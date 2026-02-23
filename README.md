@@ -83,6 +83,27 @@ are shown for the string `'attachment; filename="EURO rates.txt"; filename*=UTF-
   always lower case and extended versions replace non-extended versions). Example:
   `{filename: "€ rates.txt"}`
 
+### contentDisposition.format(obj)
+
+```js
+const disposition = contentDisposition.format({
+  type: 'attachment',
+  parameters: { filename: 'EURO rates.txt' },
+});
+```
+
+Format an object into a `Content-Disposition` header string. This is the inverse of
+the `parse` method. It takes an object with the following properties and returns a
+properly formatted header string:
+
+- `type` (required): The disposition type (string). Will be normalized to lower-case.
+  Example: `'attachment'` or `'inline'`
+
+- `parameters` (optional): An object of parameters to include in the header. Example: `{ filename: "plans.pdf" }`
+
+The method handles encoding of parameter values appropriately, including proper
+formatting of special characters and Unicode handling.
+
 ## Examples
 
 ### Send a file for download
