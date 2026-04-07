@@ -430,8 +430,20 @@ describe('contentDisposition.parse(string)', function () {
         /unsupported charset/)
     })
 
+    it('should reject when missing embedded language', function () {
+      assert.throws(contentDisposition.parse.bind(null, 'attachment; filename*=UTF-8%E2%82%AC%20rates.pdf'),
+        /invalid extended field value/)
+    })
+
     it('should parse with embedded language', function () {
       assert.deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'en\'%E2%82%AC%20rates.pdf'), {
+        type: 'attachment',
+        parameters: { filename: '€ rates.pdf' }
+      })
+    })
+
+    it('should parse with embedded language with region subtag', function () {
+      assert.deepEqual(contentDisposition.parse('attachment; filename*=UTF-8\'en-US\'%E2%82%AC%20rates.pdf'), {
         type: 'attachment',
         parameters: { filename: '€ rates.pdf' }
       })

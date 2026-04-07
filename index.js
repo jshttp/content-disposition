@@ -82,7 +82,7 @@ var TEXT_REGEXP = /^[\x20-\x7e\x80-\xff]+$/
 var TOKEN_REGEXP = /^[!#$%&'*+.0-9A-Z^_`a-z|~-]+$/
 
 /**
- * RegExp for various RFC 5987 grammar
+ * RegExp for parsing extended parameter values per RFC 5987.
  *
  * ext-value     = charset  "'" [ language ] "'" value-chars
  * charset       = "UTF-8" / "ISO-8859-1" / mime-charset
@@ -91,10 +91,12 @@ var TOKEN_REGEXP = /^[!#$%&'*+.0-9A-Z^_`a-z|~-]+$/
  *               / "!" / "#" / "$" / "%" / "&"
  *               / "+" / "-" / "^" / "_" / "`"
  *               / "{" / "}" / "~"
- * language      = ( 2*3ALPHA [ extlang ] )
- *               / 4ALPHA
- *               / 5*8ALPHA
- * extlang       = *3( "-" 3ALPHA )
+ *
+ * language      = <Language-Tag as defined in RFC 5646, Section 2.1>
+ *                 (Optional: the two literal single quotes MUST appear,
+ *                 but the language field inside them may be empty.
+ *                 We are ignoring the language content rather than validate it)
+ *
  * value-chars   = *( pct-encoded / attr-char )
  * pct-encoded   = "%" HEXDIG HEXDIG
  * attr-char     = ALPHA / DIGIT
@@ -102,8 +104,7 @@ var TOKEN_REGEXP = /^[!#$%&'*+.0-9A-Z^_`a-z|~-]+$/
  *               / "^" / "_" / "`" / "|" / "~"
  * @private
  */
-
-var EXT_VALUE_REGEXP = /^([A-Za-z0-9!#$%&+\-^_`{}~]+)'(?:[A-Za-z]{2,3}(?:-[A-Za-z]{3}){0,3}|[A-Za-z]{4,8}|)'((?:%[0-9A-Fa-f]{2}|[A-Za-z0-9!#$&+.^_`|~-])+)$/
+var EXT_VALUE_REGEXP = /([A-Za-z0-9!#$%&+\-^_`{}~]+)'(?:[^']*)'((?:%[0-9A-Fa-f]{2}|[A-Za-z0-9!#$&+.^_`|~-])+)$/
 
 /**
  * RegExp for various RFC 6266 grammar
