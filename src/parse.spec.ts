@@ -884,7 +884,7 @@ describe('parse(string)', function () {
           {
             type: 'attachment',
             parameters: {
-              'filename*0*': "UTF-8''foo-%c3%a4",
+              'filename*0': 'foo-ä',
               'filename*1': '.html',
             },
           },
