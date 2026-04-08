@@ -47,96 +47,81 @@ export function create(filename?: string, options?: CreateOptions): string {
   return format({ type, parameters });
 }
 
+const SP = 32; // " "
+const HTAB = 9; // "\t"
+const SEMI = 59; // ";"
+const EQ = 61; // "="
+const DQUOTE = 34; // '"'
+const BSLASH = 92; // "\\"
+
 /**
  * Parse Content-Disposition header string.
  */
-export function parse(string: string): ContentDisposition {
-  if (!string || typeof string !== 'string') {
-    throw new TypeError('argument string is required');
-  }
+export function parse(header: string): ContentDisposition {
+  const len = header.length;
+  let index = skipOWS(header, 0, header.length);
 
-  let index = 0;
-  const typeEnd = parseToken(string, index);
-  if (typeEnd === -1) {
-    throw new TypeError('invalid type format');
-  }
-
-  const type = string.slice(index, typeEnd).toLowerCase();
-  index = skipLinearWhitespace(string, typeEnd);
-
-  if (index < string.length && string[index] !== ';') {
-    throw new TypeError('invalid type format');
-  }
+  const typeStart = index;
+  index = parseToken(header, index, len);
+  const typeEnd = trailingOWS(header, typeStart, index);
+  const type = header.slice(typeStart, typeEnd).toLowerCase();
 
   const parameters: Record<string, string> = new NullObject();
-  const names = new Set<string>();
 
-  while (index < string.length) {
-    if (string[index] !== ';') {
-      throw new TypeError('invalid parameter format');
-    }
-
-    index = skipLinearWhitespace(string, index + 1);
+  parameter: while (index < len) {
+    index = skipOWS(header, index + 1, len); // Skip over semicolon.
 
     const keyStart = index;
-    const keyEnd = parseToken(string, index);
-    if (keyEnd === -1) {
-      throw new TypeError('invalid parameter format');
-    }
 
-    index = skipLinearWhitespace(string, keyEnd);
+    while (index < len) {
+      const char = header.charCodeAt(index);
+      if (char === SEMI) continue parameter;
 
-    if (index >= string.length || string[index] !== '=') {
-      throw new TypeError('invalid parameter format');
-    }
+      if (char === EQ) {
+        const keyEnd = trailingOWS(header, keyStart, index);
+        const key = header.slice(keyStart, keyEnd).toLowerCase();
 
-    index = skipLinearWhitespace(string, index + 1);
+        index = skipOWS(header, index + 1, len);
 
-    let value: string;
-    let isQuoted = false;
-    if (index < string.length && string[index] === '"') {
-      const parsedQuoted = parseQuotedString(string, index);
-      value = parsedQuoted.value;
-      index = parsedQuoted.index;
-      isQuoted = true;
-    } else {
-      const valueEnd = parseToken(string, index);
-      if (valueEnd === -1) {
-        throw new TypeError('invalid parameter format');
+        if (index < len && header.charCodeAt(index) === DQUOTE) {
+          index++;
+
+          let value = '';
+          while (index < len) {
+            const code = header.charCodeAt(index++);
+            if (code === DQUOTE) {
+              index = parseToken(header, index, len);
+              if (parameters[key] === undefined) parameters[key] = value;
+              continue parameter;
+            }
+
+            if (code === BSLASH && index < len) {
+              value += header[index++];
+              continue;
+            }
+
+            value += String.fromCharCode(code);
+          }
+        }
+
+        const valueStart = index;
+        index = parseToken(header, index, len);
+        const valueEnd = trailingOWS(header, valueStart, index);
+        const value = header.slice(valueStart, valueEnd);
+
+        if (key.charCodeAt(key.length - 1) === 42 /* "*" */) {
+          const normalizedKey = key.slice(0, -1);
+          const decoded = decodeRFC8187(value);
+          if (decoded !== undefined) parameters[normalizedKey] = decoded;
+          continue parameter;
+        }
+
+        if (parameters[key] === undefined) parameters[key] = value;
+        continue parameter;
       }
 
-      value = string.slice(index, valueEnd);
-      index = valueEnd;
+      index++;
     }
-
-    index = skipLinearWhitespace(string, index);
-
-    let key = string.slice(keyStart, keyEnd).toLowerCase();
-    if (names.has(key)) {
-      throw new TypeError('invalid duplicate parameter');
-    }
-
-    names.add(key);
-
-    if (key.indexOf('*') + 1 === key.length) {
-      if (isQuoted) {
-        throw new TypeError('invalid extended field value');
-      }
-
-      // decode extended value
-      key = key.slice(0, -1);
-      value = decodefield(value);
-
-      // overwrite existing value
-      parameters[key] = value;
-      continue;
-    }
-
-    if (typeof parameters[key] === 'string') {
-      continue;
-    }
-
-    parameters[key] = value;
   }
 
   return { type, parameters };
@@ -240,34 +225,23 @@ function createparams(
 }
 
 /**
- * Decode a RFC 5987 field value (gracefully).
+ * Decode a RFC 8187 field value (gracefully).
  */
-function decodefield(str: string): string {
+function decodeRFC8187(str: string): string | undefined {
   const charsetEnd = str.indexOf("'");
   if (charsetEnd <= 0) {
-    throw new TypeError('invalid extended field value');
+    return undefined;
   }
 
   const languageEnd = str.indexOf("'", charsetEnd + 1);
   if (languageEnd === -1) {
-    throw new TypeError('invalid extended field value');
+    return undefined;
   }
 
-  const charset = str.slice(0, charsetEnd);
-  const language = str.slice(charsetEnd + 1, languageEnd);
+  const charset = str.slice(0, charsetEnd).toLowerCase();
   const encoded = str.slice(languageEnd + 1);
 
-  if (
-    !isMimeCharset(charset) ||
-    !isLanguageTag(language) ||
-    !isExtendedValueChars(encoded)
-  ) {
-    throw new TypeError('invalid extended field value');
-  }
-
-  const normalizedCharset = charset.toLowerCase();
-
-  switch (normalizedCharset) {
+  switch (charset) {
     case 'iso-8859-1': {
       const binary = decodeHexEscapes(encoded);
       return getlatin1(binary);
@@ -291,71 +265,43 @@ function decodefield(str: string): string {
     }
   }
 
-  throw new TypeError('unsupported charset in extended field');
+  return undefined;
 }
 
 /**
  * Parse a token starting at the provided index.
  */
-function parseToken(str: string, index: number): number {
-  let end = index;
-
-  while (end < str.length && isTokenChar(str[end])) {
-    end++;
+function parseToken(str: string, index: number, len: number): number {
+  while (index < len) {
+    const char = str.charCodeAt(index);
+    if (char === SEMI) break;
+    index++;
   }
-
-  return end === index ? -1 : end;
-}
-
-/**
- * Parse a quoted string starting at the provided index.
- */
-function parseQuotedString(
-  str: string,
-  index: number,
-): { value: string; index: number } {
-  let result = '';
-  let cursor = index + 1;
-
-  while (cursor < str.length) {
-    const char = str[cursor];
-
-    if (char === '"') {
-      return { value: result, index: cursor + 1 };
-    }
-
-    if (char === '\\') {
-      cursor++;
-
-      if (cursor >= str.length || !isQuotedPairChar(str[cursor])) {
-        throw new TypeError('invalid parameter format');
-      }
-
-      result += str[cursor];
-      cursor++;
-      continue;
-    }
-
-    if (!isQuotedTextChar(char)) {
-      throw new TypeError('invalid parameter format');
-    }
-
-    result += char;
-    cursor++;
-  }
-
-  throw new TypeError('invalid parameter format');
+  return index;
 }
 
 /**
  * Skip RFC 2616 linear whitespace (space / tab).
  */
-function skipLinearWhitespace(str: string, index: number): number {
-  while (index < str.length && isLinearWhitespace(str[index])) {
+function skipOWS(str: string, index: number, len: number): number {
+  while (index < len) {
+    const char = str.charCodeAt(index);
+    if (char !== SP && char !== HTAB) break;
     index++;
   }
-
   return index;
+}
+
+/**
+ * Skip RFC 2616 linear whitespace (space / tab) from the end of a string.
+ */
+function trailingOWS(str: string, start: number, end: number): number {
+  while (end > start) {
+    const char = str.charCodeAt(end - 1);
+    if (char !== SP && char !== HTAB) break;
+    end--;
+  }
+  return end;
 }
 
 /**
@@ -456,192 +402,6 @@ function basename(path: string): string {
   }
 
   return normalized.slice(start + 1, end);
-}
-
-/**
- * Check if a character is RFC 2616 linear whitespace.
- */
-function isLinearWhitespace(char: string): boolean {
-  return char === ' ' || char === '\t';
-}
-
-/**
- * Check if a character is valid in a token.
- */
-function isTokenChar(char: string): boolean {
-  const code = char.charCodeAt(0);
-
-  return (
-    isAlphaNumericCode(code) ||
-    char === '!' ||
-    char === '#' ||
-    char === '$' ||
-    char === '%' ||
-    char === '&' ||
-    char === "'" ||
-    char === '*' ||
-    char === '+' ||
-    char === '.' ||
-    char === '^' ||
-    char === '_' ||
-    char === '`' ||
-    char === '|' ||
-    char === '~' ||
-    char === '-'
-  );
-}
-
-/**
- * Check if a character is allowed directly inside a quoted string.
- */
-function isQuotedTextChar(char: string): boolean {
-  const code = char.charCodeAt(0);
-
-  return (
-    (code >= 0x20 && code <= 0x21) ||
-    (code >= 0x23 && code <= 0x5b) ||
-    (code >= 0x5d && code <= 0x7e) ||
-    (code >= 0x80 && code <= 0xff)
-  );
-}
-
-/**
- * Check if a character is valid after a quoted-pair escape.
- */
-function isQuotedPairChar(char: string): boolean {
-  const code = char.charCodeAt(0);
-  return code >= 0x20 && code <= 0x7e;
-}
-
-/**
- * Check if a string is a valid MIME charset token.
- */
-function isMimeCharset(str: string): boolean {
-  if (str.length === 0) {
-    return false;
-  }
-
-  for (let index = 0; index < str.length; index++) {
-    const char = str[index];
-    const code = char.charCodeAt(0);
-
-    if (
-      !isAlphaNumericCode(code) &&
-      char !== '!' &&
-      char !== '#' &&
-      char !== '$' &&
-      char !== '%' &&
-      char !== '&' &&
-      char !== '+' &&
-      char !== '-' &&
-      char !== '^' &&
-      char !== '_' &&
-      char !== '`' &&
-      char !== '{' &&
-      char !== '}' &&
-      char !== '~'
-    ) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/**
- * Check if a string looks like a RFC 5646 language tag.
- */
-function isLanguageTag(str: string): boolean {
-  if (str.length === 0) {
-    return true;
-  }
-
-  let segmentLength = 0;
-
-  for (let index = 0; index < str.length; index++) {
-    const char = str[index];
-
-    if (char === '-') {
-      if (segmentLength === 0) {
-        return false;
-      }
-
-      segmentLength = 0;
-      continue;
-    }
-
-    if (!isAlphaCode(char.charCodeAt(0))) {
-      return false;
-    }
-
-    segmentLength++;
-  }
-
-  return segmentLength > 0;
-}
-
-/**
- * Check if a string contains only RFC 5987 value-chars.
- */
-function isExtendedValueChars(str: string): boolean {
-  if (str.length === 0) {
-    return false;
-  }
-
-  for (let index = 0; index < str.length; index++) {
-    const char = str[index];
-    const code = char.charCodeAt(0);
-
-    if (char === '%') {
-      if (
-        index + 2 >= str.length ||
-        !isHexDigit(str[index + 1]) ||
-        !isHexDigit(str[index + 2])
-      ) {
-        return false;
-      }
-
-      index += 2;
-      continue;
-    }
-
-    if (
-      !isAlphaNumericCode(code) &&
-      char !== '!' &&
-      char !== '#' &&
-      char !== '$' &&
-      char !== '&' &&
-      char !== '+' &&
-      char !== '.' &&
-      char !== '^' &&
-      char !== '_' &&
-      char !== '`' &&
-      char !== '|' &&
-      char !== '~' &&
-      char !== '-'
-    ) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/**
- * Check if a character code is alphabetic.
- */
-function isAlphaCode(code: number): boolean {
-  return (
-    (code >= 65 && code <= 90) || // A-Z
-    (code >= 97 && code <= 122) // a-z
-  );
-}
-
-/**
- * Check if a character code is alphanumeric.
- */
-function isAlphaNumericCode(code: number): boolean {
-  return isAlphaCode(code) || (code >= 48 && code <= 57);
 }
 
 /**
