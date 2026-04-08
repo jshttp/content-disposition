@@ -25,6 +25,7 @@
   "scripts": {
     "bench": "vitest bench",
     "build": "ts-scripts build",
+    "demo": "node demo/server.js",
     "format": "ts-scripts format",
     "lint": "ts-scripts lint",
     "prepare": "ts-scripts install && npm run build",
