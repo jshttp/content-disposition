@@ -17,17 +17,17 @@ $ npm install content-disposition
 ## API
 
 ```js
-const contentDisposition = require('content-disposition');
+import { create, parse } from 'content-disposition';
 ```
 
-### contentDisposition(filename, options)
+### create(filename, options)
 
 Create an attachment `Content-Disposition` header value using the given file name,
 if supplied. The `filename` is optional and if no file name is desired, but you
 want to specify `options`, set `filename` to `undefined`.
 
 ```js
-res.setHeader('Content-Disposition', contentDisposition('∫ maths.pdf'));
+res.setHeader('Content-Disposition', create('∫ maths.pdf'));
 ```
 
 **note** HTTP headers are of the ISO-8859-1 character set. If you are writing this
@@ -64,7 +64,7 @@ Specifies the disposition type, defaults to `"attachment"`. This can also be
 `attachment`, but can convey additional information if both parties agree to
 it). The type is normalized to lower-case.
 
-### contentDisposition.parse(string)
+### parse(string)
 
 ```js
 const disposition = contentDisposition.parse(

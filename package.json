@@ -23,6 +23,7 @@
     "dist/"
   ],
   "scripts": {
+    "bench": "vitest bench",
     "build": "ts-scripts build",
     "format": "ts-scripts format",
     "lint": "ts-scripts lint",
