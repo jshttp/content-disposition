@@ -29,6 +29,15 @@ export interface CreateOptions {
 }
 
 /**
+ * Null object perf optimization. Faster than `Object.create(null)` and `{ __proto__: null }`.
+ */
+const NullObject = /* @__PURE__ */ (() => {
+  const C = function () {};
+  C.prototype = Object.create(null);
+  return C;
+})() as unknown as { new (): any };
+
+/**
  * Create an attachment Content-Disposition header.
  */
 export function create(filename?: string, options?: CreateOptions): string {
@@ -55,7 +64,7 @@ export function parse(string: string): ContentDisposition {
   // normalize type
   let index = match[0].length;
   const type = match[1].toLowerCase();
-  const parameters: Record<string, string> = Object.create(null);
+  const parameters: Record<string, string> = new NullObject();
 
   let key;
   const names = [];
@@ -227,7 +236,7 @@ function createparams(
     throw new TypeError('fallback must be ISO-8859-1 string');
   }
 
-  const params: Record<string, string> = {};
+  const params: Record<string, string> = new NullObject();
 
   // restrict to file base name
   const name = basename(filename);
