@@ -130,11 +130,6 @@ export function parse(header: string): ContentDisposition {
 }
 
 /**
- * TextDecoder instance for UTF-8 decoding when decodeURIComponent fails due to invalid byte sequences.
- */
-const utf8Decoder = new TextDecoder('utf-8');
-
-/**
  * RegExp to match non attr-char, *after* encodeURIComponent (i.e. not including "%")
  */
 const ENCODE_URL_ATTR_CHAR_REGEXP = /[\x00-\x20"'()*,/:;<=>?@[\\\]{}\x7f]/g; // eslint-disable-line no-control-regex
@@ -245,29 +240,26 @@ function decodeRFC8187(str: string): string | undefined {
 
   switch (charset) {
     case 'iso-8859-1': {
-      const binary = decodeHexEscapes(encoded);
-      return getlatin1(binary);
+      return decodeHexEscapes(encoded);
     }
     case 'utf-8':
     case 'utf8': {
-      try {
-        return decodeURIComponent(encoded);
-      } catch {
-        // Failed to decode with decodeURIComponent, fallback to lenient decoding which replaces invalid UTF-8 byte sequences with the Unicode replacement character
-        // TODO: Consider removing in the next major version to be more strict about invalid percent-encodings
-        const binary = decodeHexEscapes(encoded);
-
-        const bytes = new Uint8Array(binary.length);
-        for (let idx = 0; idx < binary.length; idx++) {
-          bytes[idx] = binary.charCodeAt(idx);
-        }
-
-        return utf8Decoder.decode(bytes);
-      }
+      return tryDecodeURIComponent(encoded);
     }
   }
 
   return undefined;
+}
+
+/**
+ * Decode URI component but return `undefined` on error.
+ */
+function tryDecodeURIComponent(str: string): string | undefined {
+  try {
+    return decodeURIComponent(str);
+  } catch {
+    return undefined;
+  }
 }
 
 /**
