@@ -7,7 +7,7 @@
     "outDir": "dist",
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "types": ["./textdecoder.d.ts"]
+    "types": []
   },
   "include": ["src/**/*"]
 }
