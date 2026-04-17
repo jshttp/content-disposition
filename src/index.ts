@@ -47,73 +47,83 @@ export function create(filename?: string, options?: CreateOptions): string {
   return format({ type, parameters });
 }
 
+const SP = 32; // " "
+const HTAB = 9; // "\t"
+const SEMI = 59; // ";"
+const EQ = 61; // "="
+const DQUOTE = 34; // '"'
+const BSLASH = 92; // "\\"
+
 /**
  * Parse Content-Disposition header string.
  */
-export function parse(string: string): ContentDisposition {
-  if (!string || typeof string !== 'string') {
-    throw new TypeError('argument string is required');
-  }
+export function parse(header: string): ContentDisposition {
+  const len = header.length;
+  let index = skipOWS(header, 0, header.length);
 
-  let match = DISPOSITION_TYPE_REGEXP.exec(string);
+  const typeStart = index;
+  index = parseToken(header, index, len);
+  const typeEnd = trailingOWS(header, typeStart, index);
+  const type = header.slice(typeStart, typeEnd).toLowerCase();
 
-  if (!match) {
-    throw new TypeError('invalid type format');
-  }
-
-  // normalize type
-  let index = match[0].length;
-  const type = match[1].toLowerCase();
   const parameters: Record<string, string> = new NullObject();
 
-  let key;
-  const names = [];
-  let value;
+  parameter: while (index < len) {
+    index = skipOWS(header, index + 1, len); // Skip over semicolon.
 
-  // calculate index to start at
-  index = PARAM_REGEXP.lastIndex =
-    match[0].slice(-1) === ';' ? index - 1 : index;
+    const keyStart = index;
 
-  // match parameters
-  while ((match = PARAM_REGEXP.exec(string))) {
-    if (match.index !== index) {
-      throw new TypeError('invalid parameter format');
+    while (index < len) {
+      const char = header.charCodeAt(index);
+      if (char === SEMI) continue parameter;
+
+      if (char === EQ) {
+        const keyEnd = trailingOWS(header, keyStart, index);
+        const key = header.slice(keyStart, keyEnd).toLowerCase();
+
+        index = skipOWS(header, index + 1, len);
+
+        if (index < len && header.charCodeAt(index) === DQUOTE) {
+          index++;
+
+          let value = '';
+          while (index < len) {
+            const code = header.charCodeAt(index++);
+            if (code === DQUOTE) {
+              index = parseToken(header, index, len);
+              if (parameters[key] === undefined) parameters[key] = value;
+              continue parameter;
+            }
+
+            if (code === BSLASH && index < len) {
+              value += header[index++];
+              continue;
+            }
+
+            value += String.fromCharCode(code);
+          }
+        }
+
+        const valueStart = index;
+        index = parseToken(header, index, len);
+        const valueEnd = trailingOWS(header, valueStart, index);
+        const value = header.slice(valueStart, valueEnd);
+
+        if (key.charCodeAt(key.length - 1) === 42 /* "*" */) {
+          const normalizedKey = key.slice(0, -1);
+          const decoded = decodeRFC8187(value);
+          if (decoded !== undefined) {
+            parameters[normalizedKey] = decoded;
+            continue parameter;
+          }
+        }
+
+        if (parameters[key] === undefined) parameters[key] = value;
+        continue parameter;
+      }
+
+      index++;
     }
-
-    index += match[0].length;
-    key = match[1].toLowerCase();
-    value = match[2];
-
-    if (names.indexOf(key) !== -1) {
-      throw new TypeError('invalid duplicate parameter');
-    }
-
-    names.push(key);
-
-    if (key.indexOf('*') + 1 === key.length) {
-      // decode extended value
-      key = key.slice(0, -1);
-      value = decodefield(value);
-
-      // overwrite existing value
-      parameters[key] = value;
-      continue;
-    }
-
-    if (typeof parameters[key] === 'string') {
-      continue;
-    }
-
-    if (value[0] === '"') {
-      // remove quotes and escapes
-      value = value.slice(1, -1).replace(QESC_REGEXP, '$1');
-    }
-
-    parameters[key] = value;
-  }
-
-  if (index !== -1 && index !== string.length) {
-    throw new TypeError('invalid parameter format');
   }
 
   return { type, parameters };
@@ -133,14 +143,6 @@ const ENCODE_URL_ATTR_CHAR_REGEXP = /[\x00-\x20"'()*,/:;<=>?@[\\\]{}\x7f]/g; // 
  * RegExp to match non-latin1 characters.
  */
 const NON_LATIN1_REGEXP = /[^\x20-\x7e\xa0-\xff]/g;
-
-/**
- * RegExp to match quoted-pair in RFC 2616
- *
- * quoted-pair = "\" CHAR
- * CHAR        = <any US-ASCII character (octets 0 - 127)>
- */
-const QESC_REGEXP = /\\([\u0000-\u007f])/g; // eslint-disable-line no-control-regex
 
 /**
  * RegExp to match chars that must be quoted-pair in RFC 2616
@@ -170,48 +172,8 @@ const QUOTE_REGEXP = /([\\"])/g;
  * CTL           = <any US-ASCII control character (octets 0 - 31) and DEL (127)>
  * OCTET         = <any 8-bit sequence of data>
  */
-const PARAM_REGEXP =
-  /;[\x09\x20]*([!#$%&'*+.0-9A-Z^_`a-z|~-]+)[\x09\x20]*=[\x09\x20]*("(?:[\x20!\x23-\x5b\x5d-\x7e\x80-\xff]|\\[\x20-\x7e])*"|[!#$%&'*+.0-9A-Z^_`a-z|~-]+)[\x09\x20]*/g; // eslint-disable-line no-control-regex
 const TEXT_REGEXP = /^[\x20-\x7e\x80-\xff]+$/;
 const TOKEN_REGEXP = /^[!#$%&'*+.0-9A-Z^_`a-z|~-]+$/;
-
-/**
- * RegExp for various RFC 5987 grammar
- *
- * ext-value     = charset  "'" [ language ] "'" value-chars
- * charset       = "UTF-8" / "ISO-8859-1" / mime-charset
- * mime-charset  = 1*mime-charsetc
- * mime-charsetc = ALPHA / DIGIT
- *               / "!" / "#" / "$" / "%" / "&"
- *               / "+" / "-" / "^" / "_" / "`"
- *               / "{" / "}" / "~"
- * language      = ( 2*3ALPHA [ extlang ] )
- *               / 4ALPHA
- *               / 5*8ALPHA
- * extlang       = *3( "-" 3ALPHA )
- * value-chars   = *( pct-encoded / attr-char )
- * pct-encoded   = "%" HEXDIG HEXDIG
- * attr-char     = ALPHA / DIGIT
- *               / "!" / "#" / "$" / "&" / "+" / "-" / "."
- *               / "^" / "_" / "`" / "|" / "~"
- */
-const EXT_VALUE_REGEXP =
-  /^([A-Za-z0-9!#$%&+\-^_`{}~]+)'(?:[A-Za-z]{2,3}(?:-[A-Za-z]{3}){0,3}|[A-Za-z]{4,8}|)'((?:%[0-9A-Fa-f]{2}|[A-Za-z0-9!#$&+.^_`|~-])+)$/;
-
-/**
- * RegExp for various RFC 6266 grammar
- *
- * disposition-type = "inline" | "attachment" | disp-ext-type
- * disp-ext-type    = token
- * disposition-parm = filename-parm | disp-ext-parm
- * filename-parm    = "filename" "=" value
- *                  | "filename*" "=" ext-value
- * disp-ext-parm    = token "=" value
- *                  | ext-token "=" ext-value
- * ext-token        = <the characters in token, followed by "*">
- */
-const DISPOSITION_TYPE_REGEXP =
-  /^([!#$%&'*+.0-9A-Z^_`a-z|~-]+)[\x09\x20]*(?:$|;)/; // eslint-disable-line no-control-regex
 
 /**
  * Create parameters object from filename and fallback.
@@ -265,17 +227,21 @@ function createparams(
 }
 
 /**
- * Decode a RFC 5987 field value (gracefully).
+ * Decode a RFC 8187 field value (gracefully).
  */
-function decodefield(str: string): string {
-  const match = EXT_VALUE_REGEXP.exec(str);
-
-  if (!match) {
-    throw new TypeError('invalid extended field value');
+function decodeRFC8187(str: string): string | undefined {
+  const charsetEnd = str.indexOf("'");
+  if (charsetEnd <= 0) {
+    return undefined;
   }
 
-  const charset = match[1].toLowerCase();
-  const encoded = match[2];
+  const languageEnd = str.indexOf("'", charsetEnd + 1);
+  if (languageEnd === -1) {
+    return undefined;
+  }
+
+  const charset = str.slice(0, charsetEnd).toLowerCase();
+  const encoded = str.slice(languageEnd + 1);
 
   switch (charset) {
     case 'iso-8859-1': {
@@ -301,7 +267,43 @@ function decodefield(str: string): string {
     }
   }
 
-  throw new TypeError('unsupported charset in extended field');
+  return undefined;
+}
+
+/**
+ * Parse a token starting at the provided index.
+ */
+function parseToken(str: string, index: number, len: number): number {
+  while (index < len) {
+    const char = str.charCodeAt(index);
+    if (char === SEMI) break;
+    index++;
+  }
+  return index;
+}
+
+/**
+ * Skip RFC 2616 linear whitespace (space / tab).
+ */
+function skipOWS(str: string, index: number, len: number): number {
+  while (index < len) {
+    const char = str.charCodeAt(index);
+    if (char !== SP && char !== HTAB) break;
+    index++;
+  }
+  return index;
+}
+
+/**
+ * Skip RFC 2616 linear whitespace (space / tab) from the end of a string.
+ */
+function trailingOWS(str: string, start: number, end: number): number {
+  while (end > start) {
+    const char = str.charCodeAt(end - 1);
+    if (char !== SP && char !== HTAB) break;
+    end--;
+  }
+  return end;
 }
 
 /**
