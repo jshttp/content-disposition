@@ -112,8 +112,10 @@ export function parse(header: string): ContentDisposition {
         if (key.charCodeAt(key.length - 1) === 42 /* "*" */) {
           const normalizedKey = key.slice(0, -1);
           const decoded = decodeRFC8187(value);
-          if (decoded !== undefined) parameters[normalizedKey] = decoded;
-          continue parameter;
+          if (decoded !== undefined) {
+            parameters[normalizedKey] = decoded;
+            continue parameter;
+          }
         }
 
         if (parameters[key] === undefined) parameters[key] = value;

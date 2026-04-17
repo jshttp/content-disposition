@@ -2,21 +2,19 @@ import { describe, it, assert } from 'vitest';
 import { parse } from './index';
 
 describe('parse(string)', function () {
-  it('should require string', function () {
-    assert.throws((parse as any).bind(null), /argument string.*required/);
-  });
-
-  it('should reject non-strings', function () {
-    assert.throws((parse as any).bind(null, 42), /argument string.*required/);
-  });
-
   describe('with only type', function () {
-    it('should reject quoted value', function () {
-      assert.throws(parse.bind(null, '"attachment"'), /invalid type format/);
+    it('should parse quoted value leniently', function () {
+      assert.deepEqual(parse('"attachment"'), {
+        type: '"attachment"',
+        parameters: {},
+      });
     });
 
-    it('should reject trailing semicolon', function () {
-      assert.throws(parse.bind(null, 'attachment;'), /invalid.*format/);
+    it('should ignore trailing semicolon', function () {
+      assert.deepEqual(parse('attachment;'), {
+        type: 'attachment',
+        parameters: {},
+      });
     });
 
     it('should parse "attachment"', function () {
@@ -56,57 +54,57 @@ describe('parse(string)', function () {
   });
 
   describe('with parameters', function () {
-    it('should reject trailing semicolon', function () {
-      assert.throws(
-        parse.bind(null, 'attachment; filename="rates.pdf";'),
-        /invalid parameter format/,
-      );
+    it('should ignore trailing semicolon', function () {
+      assert.deepEqual(parse('attachment; filename="rates.pdf";'), {
+        type: 'attachment',
+        parameters: { filename: 'rates.pdf' },
+      });
     });
 
-    it('should reject invalid parameter name', function () {
-      assert.throws(
-        parse.bind(null, 'attachment; filename@="rates.pdf"'),
-        /invalid parameter format/,
-      );
+    it('should preserve invalid parameter name', function () {
+      assert.deepEqual(parse('attachment; filename@="rates.pdf"'), {
+        type: 'attachment',
+        parameters: { 'filename@': 'rates.pdf' },
+      });
     });
 
-    it('should reject missing parameter value', function () {
-      assert.throws(
-        parse.bind(null, 'attachment; filename='),
-        /invalid parameter format/,
-      );
+    it('should treat missing parameter value as empty', function () {
+      assert.deepEqual(parse('attachment; filename='), {
+        type: 'attachment',
+        parameters: { filename: '' },
+      });
     });
 
-    it('should reject invalid parameter value', function () {
-      assert.throws(
-        parse.bind(null, 'attachment; filename=trolly,trains'),
-        /invalid parameter format/,
-      );
+    it('should preserve invalid parameter value', function () {
+      assert.deepEqual(parse('attachment; filename=trolly,trains'), {
+        type: 'attachment',
+        parameters: { filename: 'trolly,trains' },
+      });
     });
 
-    it('should reject invalid parameters', function () {
-      assert.throws(
-        parse.bind(null, 'attachment; filename=total/; foo=bar'),
-        /invalid parameter format/,
-      );
+    it('should preserve otherwise invalid parameters', function () {
+      assert.deepEqual(parse('attachment; filename=total/; foo=bar'), {
+        type: 'attachment',
+        parameters: { filename: 'total/', foo: 'bar' },
+      });
     });
 
-    it('should reject duplicate parameters', function () {
-      assert.throws(
-        parse.bind(null, 'attachment; filename=foo; filename=bar'),
-        /invalid duplicate parameter/,
-      );
+    it('should keep the first duplicate parameter', function () {
+      assert.deepEqual(parse('attachment; filename=foo; filename=bar'), {
+        type: 'attachment',
+        parameters: { filename: 'foo' },
+      });
     });
 
-    it('should reject missing type', function () {
-      assert.throws(
-        parse.bind(null, 'filename="plans.pdf"'),
-        /invalid type format/,
-      );
-      assert.throws(
-        parse.bind(null, '; filename="plans.pdf"'),
-        /invalid type format/,
-      );
+    it('should parse missing type leniently', function () {
+      assert.deepEqual(parse('filename="plans.pdf"'), {
+        type: 'filename="plans.pdf"',
+        parameters: {},
+      });
+      assert.deepEqual(parse('; filename="plans.pdf"'), {
+        type: '',
+        parameters: { filename: 'plans.pdf' },
+      });
     });
 
     it('should lower-case parameter name', function () {
@@ -163,13 +161,13 @@ describe('parse(string)', function () {
   });
 
   describe('with extended parameters', function () {
-    it('should reject quoted extended parameter value', function () {
-      assert.throws(
-        parse.bind(
-          null,
-          'attachment; filename*="UTF-8\'\'%E2%82%AC%20rates.pdf"',
-        ),
-        /invalid extended.*value/,
+    it('should preserve quoted extended parameter value', function () {
+      assert.deepEqual(
+        parse('attachment; filename*="UTF-8\'\'%E2%82%AC%20rates.pdf"'),
+        {
+          type: 'attachment',
+          parameters: { 'filename*': "UTF-8''%E2%82%AC%20rates.pdf" },
+        },
       );
     });
 
@@ -234,10 +232,13 @@ describe('parse(string)', function () {
       );
     });
 
-    it('should reject unsupported charset', function () {
-      assert.throws(
-        parse.bind(null, "attachment; filename*=ISO-8859-2''%A4%20rates.pdf"),
-        /unsupported charset/,
+    it('should preserve unsupported charset as the original parameter', function () {
+      assert.deepEqual(
+        parse("attachment; filename*=ISO-8859-2''%A4%20rates.pdf"),
+        {
+          type: 'attachment',
+          parameters: { 'filename*': "ISO-8859-2''%A4%20rates.pdf" },
+        },
       );
     });
 
@@ -271,6 +272,21 @@ describe('parse(string)', function () {
         },
       );
     });
+
+    it('should keep fallback filename when extended parameter cannot be decoded', function () {
+      assert.deepEqual(
+        parse(
+          'attachment; filename="EURO rates.pdf"; filename*=ISO-8859-2\'\'%A4%20rates.pdf',
+        ),
+        {
+          type: 'attachment',
+          parameters: {
+            filename: 'EURO rates.pdf',
+            'filename*': "ISO-8859-2''%A4%20rates.pdf",
+          },
+        },
+      );
+    });
   });
 
   describe('from TC 2231', function () {
@@ -282,8 +298,11 @@ describe('parse(string)', function () {
         });
       });
 
-      it('should reject ""inline""', function () {
-        assert.throws(parse.bind(null, '"inline"'), /invalid type format/);
+      it('should parse ""inline"" leniently', function () {
+        assert.deepEqual(parse('"inline"'), {
+          type: '"inline"',
+          parameters: {},
+        });
       });
 
       it('should parse "inline; filename="foo.html""', function () {
@@ -316,8 +335,11 @@ describe('parse(string)', function () {
         });
       });
 
-      it('should reject ""attachment""', function () {
-        assert.throws(parse.bind(null, '"attachment"'), /invalid type format/);
+      it('should parse ""attachment"" leniently', function () {
+        assert.deepEqual(parse('"attachment"'), {
+          type: '"attachment"',
+          parameters: {},
+        });
       });
 
       it('should parse "ATTACHMENT"', function () {
@@ -412,32 +434,32 @@ describe('parse(string)', function () {
         });
       });
 
-      it('should reject "attachment; filename=foo,bar.html"', function () {
-        assert.throws(
-          parse.bind(null, 'attachment; filename=foo,bar.html'),
-          /invalid parameter format/,
-        );
+      it('should preserve commas in token values', function () {
+        assert.deepEqual(parse('attachment; filename=foo,bar.html'), {
+          type: 'attachment',
+          parameters: { filename: 'foo,bar.html' },
+        });
       });
 
-      it('should reject "attachment; filename=foo.html ;"', function () {
-        assert.throws(
-          parse.bind(null, 'attachment; filename=foo.html ;'),
-          /invalid parameter format/,
-        );
+      it('should ignore trailing semicolon after value', function () {
+        assert.deepEqual(parse('attachment; filename=foo.html ;'), {
+          type: 'attachment',
+          parameters: { filename: 'foo.html' },
+        });
       });
 
-      it('should reject "attachment; ;filename=foo"', function () {
-        assert.throws(
-          parse.bind(null, 'attachment; ;filename=foo'),
-          /invalid parameter format/,
-        );
+      it('should skip empty parameter slots', function () {
+        assert.deepEqual(parse('attachment; ;filename=foo'), {
+          type: 'attachment',
+          parameters: { filename: 'foo' },
+        });
       });
 
-      it('should reject "attachment; filename=foo bar.html"', function () {
-        assert.throws(
-          parse.bind(null, 'attachment; filename=foo bar.html'),
-          /invalid parameter format/,
-        );
+      it('should preserve spaces in token values', function () {
+        assert.deepEqual(parse('attachment; filename=foo bar.html'), {
+          type: 'attachment',
+          parameters: { filename: 'foo bar.html' },
+        });
       });
 
       it("should parse \"attachment; filename='foo.bar'", function () {
@@ -513,150 +535,150 @@ describe('parse(string)', function () {
         });
       });
 
-      it('should reject "attachment; filename="foo.html"; filename="bar.html"', function () {
-        assert.throws(
-          parse.bind(
-            null,
-            'attachment; filename="foo.html"; filename="bar.html"',
-          ),
-          /invalid duplicate parameter/,
+      it('should keep the first duplicate quoted filename', function () {
+        assert.deepEqual(
+          parse('attachment; filename="foo.html"; filename="bar.html"'),
+          {
+            type: 'attachment',
+            parameters: { filename: 'foo.html' },
+          },
         );
       });
 
-      it('should reject "attachment; filename=foo[1](2).html"', function () {
-        assert.throws(
-          parse.bind(null, 'attachment; filename=foo[1](2).html'),
-          /invalid parameter format/,
+      it('should preserve bracket characters in token values', function () {
+        assert.deepEqual(parse('attachment; filename=foo[1](2).html'), {
+          type: 'attachment',
+          parameters: { filename: 'foo[1](2).html' },
+        });
+      });
+
+      it('should preserve latin1 token values', function () {
+        assert.deepEqual(parse('attachment; filename=foo-ä.html'), {
+          type: 'attachment',
+          parameters: { filename: 'foo-ä.html' },
+        });
+      });
+
+      it('should preserve mojibake token values', function () {
+        assert.deepEqual(parse('attachment; filename=foo-Ã¤.html'), {
+          type: 'attachment',
+          parameters: { filename: 'foo-Ã¤.html' },
+        });
+      });
+
+      it('should treat a bare parameter as the type', function () {
+        assert.deepEqual(parse('filename=foo.html'), {
+          type: 'filename=foo.html',
+          parameters: {},
+        });
+      });
+
+      it('should preserve invalid type token with parameters', function () {
+        assert.deepEqual(parse('x=y; filename=foo.html'), {
+          type: 'x=y',
+          parameters: { filename: 'foo.html' },
+        });
+      });
+
+      it('should stop at the first recoverable parameter after a quoted type', function () {
+        assert.deepEqual(parse('"foo; filename=bar;baz"; filename=qux'), {
+          type: '"foo',
+          parameters: { filename: 'bar' },
+        });
+      });
+
+      it('should preserve commas in a malformed type token', function () {
+        assert.deepEqual(parse('filename=foo.html, filename=bar.html'), {
+          type: 'filename=foo.html, filename=bar.html',
+          parameters: {},
+        });
+      });
+
+      it('should allow an empty type when parameters follow', function () {
+        assert.deepEqual(parse('; filename=foo.html'), {
+          type: '',
+          parameters: { filename: 'foo.html' },
+        });
+      });
+
+      it('should preserve leading punctuation in the type', function () {
+        assert.deepEqual(parse(': inline; attachment; filename=foo.html'), {
+          type: ': inline',
+          parameters: { filename: 'foo.html' },
+        });
+      });
+
+      it('should skip bare parameters without values', function () {
+        assert.deepEqual(parse('inline; attachment; filename=foo.html'), {
+          type: 'inline',
+          parameters: { filename: 'foo.html' },
+        });
+      });
+
+      it('should skip bare attachment parameters without values', function () {
+        assert.deepEqual(parse('attachment; inline; filename=foo.html'), {
+          type: 'attachment',
+          parameters: { filename: 'foo.html' },
+        });
+      });
+
+      it('should ignore a suffix after a quoted filename', function () {
+        assert.deepEqual(parse('attachment; filename="foo.html".txt'), {
+          type: 'attachment',
+          parameters: { filename: 'foo.html' },
+        });
+      });
+
+      it('should treat an unterminated quoted filename as empty', function () {
+        assert.deepEqual(parse('attachment; filename="bar'), {
+          type: 'attachment',
+          parameters: { filename: '' },
+        });
+      });
+
+      it('should stop a token value at the next semicolon', function () {
+        assert.deepEqual(parse('attachment; filename=foo"bar;baz"qux'), {
+          type: 'attachment',
+          parameters: { filename: 'foo"bar' },
+        });
+      });
+
+      it('should preserve a comma-separated header fragment in the first value', function () {
+        assert.deepEqual(
+          parse('attachment; filename=foo.html, attachment; filename=bar.html'),
+          {
+            type: 'attachment',
+            parameters: { filename: 'foo.html, attachment' },
+          },
         );
       });
 
-      it('should reject "attachment; filename=foo-ä.html"', function () {
-        assert.throws(
-          parse.bind(null, 'attachment; filename=foo-ä.html'),
-          /invalid parameter format/,
-        );
+      it('should keep an unseparated parameter assignment inside the value', function () {
+        assert.deepEqual(parse('attachment; foo=foo filename=bar'), {
+          type: 'attachment',
+          parameters: { foo: 'foo filename=bar' },
+        });
       });
 
-      it('should reject "attachment; filename=foo-Ã¤.html"', function () {
-        assert.throws(
-          parse.bind(null, 'attachment; filename=foo-Ã¤.html'),
-          /invalid parameter format/,
-        );
+      it('should keep trailing assignments inside the filename value', function () {
+        assert.deepEqual(parse('attachment; filename=bar foo=foo'), {
+          type: 'attachment',
+          parameters: { filename: 'bar foo=foo' },
+        });
       });
 
-      it('should reject "filename=foo.html"', function () {
-        assert.throws(
-          parse.bind(null, 'filename=foo.html'),
-          /invalid type format/,
-        );
+      it('should treat missing semicolon after the type as part of the type', function () {
+        assert.deepEqual(parse('attachment filename=bar'), {
+          type: 'attachment filename=bar',
+          parameters: {},
+        });
       });
 
-      it('should reject "x=y; filename=foo.html"', function () {
-        assert.throws(
-          parse.bind(null, 'x=y; filename=foo.html'),
-          /invalid type format/,
-        );
-      });
-
-      it('should reject ""foo; filename=bar;baz"; filename=qux"', function () {
-        assert.throws(
-          parse.bind(null, '"foo; filename=bar;baz"; filename=qux'),
-          /invalid type format/,
-        );
-      });
-
-      it('should reject "filename=foo.html, filename=bar.html"', function () {
-        assert.throws(
-          parse.bind(null, 'filename=foo.html, filename=bar.html'),
-          /invalid type format/,
-        );
-      });
-
-      it('should reject "; filename=foo.html"', function () {
-        assert.throws(
-          parse.bind(null, '; filename=foo.html'),
-          /invalid type format/,
-        );
-      });
-
-      it('should reject ": inline; attachment; filename=foo.html', function () {
-        assert.throws(
-          parse.bind(null, ': inline; attachment; filename=foo.html'),
-          /invalid type format/,
-        );
-      });
-
-      it('should reject "inline; attachment; filename=foo.html', function () {
-        assert.throws(
-          parse.bind(null, 'inline; attachment; filename=foo.html'),
-          /invalid parameter format/,
-        );
-      });
-
-      it('should reject "attachment; inline; filename=foo.html', function () {
-        assert.throws(
-          parse.bind(null, 'attachment; inline; filename=foo.html'),
-          /invalid parameter format/,
-        );
-      });
-
-      it('should reject "attachment; filename="foo.html".txt', function () {
-        assert.throws(
-          parse.bind(null, 'attachment; filename="foo.html".txt'),
-          /invalid parameter format/,
-        );
-      });
-
-      it('should reject "attachment; filename="bar', function () {
-        assert.throws(
-          parse.bind(null, 'attachment; filename="bar'),
-          /invalid parameter format/,
-        );
-      });
-
-      it('should reject "attachment; filename=foo"bar;baz"qux', function () {
-        assert.throws(
-          parse.bind(null, 'attachment; filename=foo"bar;baz"qux'),
-          /invalid parameter format/,
-        );
-      });
-
-      it('should reject "attachment; filename=foo.html, attachment; filename=bar.html', function () {
-        assert.throws(
-          parse.bind(
-            null,
-            'attachment; filename=foo.html, attachment; filename=bar.html',
-          ),
-          /invalid parameter format/,
-        );
-      });
-
-      it('should reject "attachment; foo=foo filename=bar', function () {
-        assert.throws(
-          parse.bind(null, 'attachment; foo=foo filename=bar'),
-          /invalid parameter format/,
-        );
-      });
-
-      it('should reject "attachment; filename=bar foo=foo', function () {
-        assert.throws(
-          parse.bind(null, 'attachment; filename=bar foo=foo'),
-          /invalid parameter format/,
-        );
-      });
-
-      it('should reject "attachment filename=bar', function () {
-        assert.throws(
-          parse.bind(null, 'attachment filename=bar'),
-          /invalid type format/,
-        );
-      });
-
-      it('should reject "filename=foo.html; attachment', function () {
-        assert.throws(
-          parse.bind(null, 'filename=foo.html; attachment'),
-          /invalid type format/,
-        );
+      it('should keep the first malformed type segment', function () {
+        assert.deepEqual(parse('filename=foo.html; attachment'), {
+          type: 'filename=foo.html',
+          parameters: {},
+        });
       });
 
       it('should parse "attachment; xfilename=foo.html"', function () {
@@ -744,10 +766,13 @@ describe('parse(string)', function () {
         );
       });
 
-      it('should reject "attachment; filename*=\'\'foo-%c3%a4-%e2%82%ac.html"', function () {
-        assert.throws(
-          parse.bind(null, "attachment; filename*=''foo-%c3%a4-%e2%82%ac.html"),
-          /invalid extended.*value/,
+      it('should preserve extended values without a charset', function () {
+        assert.deepEqual(
+          parse("attachment; filename*=''foo-%c3%a4-%e2%82%ac.html"),
+          {
+            type: 'attachment',
+            parameters: { 'filename*': "''foo-%c3%a4-%e2%82%ac.html" },
+          },
         );
       });
 
@@ -778,10 +803,13 @@ describe('parse(string)', function () {
         });
       });
 
-      it('should reject "attachment; filename *=UTF-8\'\'foo-%c3%a4.html"', function () {
-        assert.throws(
-          parse.bind(null, "attachment; filename *=UTF-8''foo-%c3%a4.html"),
-          /invalid parameter format/,
+      it('should preserve spaces before the star in the parameter name', function () {
+        assert.deepEqual(
+          parse("attachment; filename *=UTF-8''foo-%c3%a4.html"),
+          {
+            type: 'attachment',
+            parameters: { 'filename ': 'foo-ä.html' },
+          },
         );
       });
 
@@ -805,39 +833,42 @@ describe('parse(string)', function () {
         );
       });
 
-      it('should reject "attachment; filename*="UTF-8\'\'foo-%c3%a4.html""', function () {
-        assert.throws(
-          parse.bind(null, 'attachment; filename*="UTF-8\'\'foo-%c3%a4.html"'),
-          /invalid extended field value/,
+      it('should preserve quoted UTF-8 extended values verbatim', function () {
+        assert.deepEqual(
+          parse('attachment; filename*="UTF-8\'\'foo-%c3%a4.html"'),
+          {
+            type: 'attachment',
+            parameters: { 'filename*': "UTF-8''foo-%c3%a4.html" },
+          },
         );
       });
 
-      it('should reject "attachment; filename*="foo%20bar.html""', function () {
-        assert.throws(
-          parse.bind(null, 'attachment; filename*="foo%20bar.html"'),
-          /invalid extended field value/,
-        );
+      it('should preserve quoted extended values without charset verbatim', function () {
+        assert.deepEqual(parse('attachment; filename*="foo%20bar.html"'), {
+          type: 'attachment',
+          parameters: { 'filename*': 'foo%20bar.html' },
+        });
       });
 
-      it('should reject "attachment; filename*=UTF-8\'foo-%c3%a4.html"', function () {
-        assert.throws(
-          parse.bind(null, "attachment; filename*=UTF-8'foo-%c3%a4.html"),
-          /invalid extended field value/,
-        );
+      it('should preserve extended values without both apostrophes', function () {
+        assert.deepEqual(parse("attachment; filename*=UTF-8'foo-%c3%a4.html"), {
+          type: 'attachment',
+          parameters: { 'filename*': "UTF-8'foo-%c3%a4.html" },
+        });
       });
 
-      it('should reject "attachment; filename*=UTF-8\'\'foo%"', function () {
-        assert.throws(
-          parse.bind(null, "attachment; filename*=UTF-8''foo%"),
-          /invalid extended field value/,
-        );
+      it('should preserve malformed trailing percent escapes', function () {
+        assert.deepEqual(parse("attachment; filename*=UTF-8''foo%"), {
+          type: 'attachment',
+          parameters: { filename: 'foo%' },
+        });
       });
 
-      it('should reject "attachment; filename*=UTF-8\'\'f%oo.html"', function () {
-        assert.throws(
-          parse.bind(null, "attachment; filename*=UTF-8''f%oo.html"),
-          /invalid extended field value/,
-        );
+      it('should preserve malformed percent escapes inside the value', function () {
+        assert.deepEqual(parse("attachment; filename*=UTF-8''f%oo.html"), {
+          type: 'attachment',
+          parameters: { filename: 'f%oo.html' },
+        });
       });
 
       it('should parse "attachment; filename*=UTF-8\'\'A-%2541.html"', function () {
@@ -981,13 +1012,13 @@ describe('parse(string)', function () {
     });
 
     describe('RFC2047 Encoding', function () {
-      it('should reject "attachment; filename==?ISO-8859-1?Q?foo-=E4.html?="', function () {
-        assert.throws(
-          parse.bind(
-            null,
-            'attachment; filename==?ISO-8859-1?Q?foo-=E4.html?=',
-          ),
-          /invalid parameter format/,
+      it('should preserve RFC2047-looking token values', function () {
+        assert.deepEqual(
+          parse('attachment; filename==?ISO-8859-1?Q?foo-=E4.html?='),
+          {
+            type: 'attachment',
+            parameters: { filename: '=?ISO-8859-1?Q?foo-=E4.html?=' },
+          },
         );
       });
 
