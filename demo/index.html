@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Content-Disposition Inspector</title>
+    <style>
+      :root {
+        --bg: #f7f1e8;
+        --panel: rgba(255, 251, 245, 0.86);
+        --ink: #1f1c18;
+        --muted: #6d6358;
+        --accent: #b54d2e;
+        --accent-2: #1f6c5c;
+        --line: rgba(31, 28, 24, 0.12);
+        --shadow: 0 24px 60px rgba(74, 54, 33, 0.16);
+        --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        --sans: "Avenir Next", "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--ink);
+        font-family: var(--sans);
+        background:
+          radial-gradient(circle at top left, rgba(181, 77, 46, 0.18), transparent 30%),
+          radial-gradient(circle at top right, rgba(31, 108, 92, 0.16), transparent 24%),
+          linear-gradient(180deg, #f9f3ea 0%, #efe6d8 100%);
+      }
+
+      main {
+        width: min(1024px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 40px 0 56px;
+      }
+
+      .hero,
+      .panel {
+        background: var(--panel);
+        backdrop-filter: blur(14px);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        padding: 28px;
+        margin-bottom: 20px;
+      }
+
+      h1 {
+        margin: 0 0 10px;
+        font-size: clamp(2.1rem, 5vw, 4rem);
+        line-height: 0.96;
+        letter-spacing: -0.05em;
+      }
+
+      p,
+      label,
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      .lede {
+        max-width: 62ch;
+        margin: 0;
+        color: var(--muted);
+      }
+
+      form {
+        display: grid;
+        gap: 18px;
+      }
+
+      .panel {
+        padding: 24px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+      }
+
+      .field {
+        display: grid;
+        gap: 8px;
+      }
+
+      .field span {
+        font-size: 0.95rem;
+        color: var(--muted);
+      }
+
+      input,
+      select,
+      button {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid rgba(31, 28, 24, 0.14);
+        background: rgba(255, 255, 255, 0.7);
+        color: var(--ink);
+      }
+
+      input[type="file"] {
+        padding: 18px;
+        background:
+          linear-gradient(135deg, rgba(181, 77, 46, 0.08), rgba(31, 108, 92, 0.08)),
+          rgba(255, 255, 255, 0.7);
+      }
+
+      button {
+        cursor: pointer;
+        border: none;
+        color: #fff8f2;
+        font-weight: 600;
+        background: linear-gradient(135deg, var(--accent), #d96b49);
+      }
+
+      button:hover {
+        filter: brightness(1.03);
+      }
+
+      .subtle {
+        font-size: 0.94rem;
+        color: var(--muted);
+      }
+
+      .results {
+        display: grid;
+        gap: 16px;
+        margin-top: 20px;
+      }
+
+      .result-card {
+        padding: 18px;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.55);
+      }
+
+      .result-card h2 {
+        margin: 0 0 8px;
+        font-size: 1.2rem;
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .chip {
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(31, 108, 92, 0.1);
+        color: var(--accent-2);
+        font-size: 0.9rem;
+      }
+
+      pre {
+        margin: 10px 0 0;
+        padding: 14px;
+        overflow: auto;
+        border-radius: 16px;
+        border: 1px solid rgba(31, 28, 24, 0.08);
+        background: #1d1a17;
+        color: #f8efe4;
+        font-family: var(--mono);
+        font-size: 0.9rem;
+        line-height: 1.45;
+      }
+
+      .empty,
+      .error {
+        padding: 18px;
+        border-radius: 18px;
+      }
+
+      .empty {
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.45);
+        border: 1px dashed rgba(31, 28, 24, 0.16);
+      }
+
+      .error {
+        color: #7d1e08;
+        background: rgba(181, 77, 46, 0.12);
+        border: 1px solid rgba(181, 77, 46, 0.18);
+      }
+
+      @media (max-width: 640px) {
+        main {
+          width: min(100vw - 20px, 1024px);
+          padding-top: 20px;
+        }
+
+        .hero,
+        .panel {
+          padding: 20px;
+          border-radius: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <h1>Content-Disposition Inspector</h1>
+        <p class="lede">
+          Upload one or more files to inspect the multipart <code>Content-Disposition</code> header your browser sends,
+          then compare it with the download header generated by this Node.js package.
+        </p>
+      </section>
+
+      <section class="panel">
+        <form id="upload-form">
+          <div class="grid">
+            <label class="field">
+              <span>Files</span>
+              <input name="files" type="file" multiple required />
+            </label>
+
+            <label class="field">
+              <span>Generated header type</span>
+              <select name="dispositionType">
+                <option value="attachment" selected>attachment</option>
+                <option value="inline">inline</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Fallback mode</span>
+              <select name="fallbackMode" id="fallback-mode">
+                <option value="auto" selected>auto-generate Latin-1 fallback</option>
+                <option value="none">disable fallback</option>
+                <option value="custom">use custom fallback</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Custom fallback filename</span>
+              <input
+                name="customFallback"
+                id="fallback-input"
+                type="text"
+                placeholder="report.pdf"
+                disabled
+              />
+            </label>
+          </div>
+
+          <button type="submit">Inspect upload</button>
+          <p class="subtle">
+            Tip: try a filename with spaces or Unicode characters to see how the generated
+            header changes.
+          </p>
+        </form>
+
+        <div id="status" class="results">
+          <div class="empty">Results will appear here after you upload a file.</div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById('upload-form');
+      const status = document.getElementById('status');
+      const fallbackMode = document.getElementById('fallback-mode');
+      const fallbackInput = document.getElementById('fallback-input');
+
+      fallbackMode.addEventListener('change', () => {
+        const enabled = fallbackMode.value === 'custom';
+        fallbackInput.disabled = !enabled;
+        if (!enabled) fallbackInput.value = '';
+      });
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        status.innerHTML = '<div class="empty">Inspecting upload…</div>';
+
+        try {
+          const response = await fetch('/inspect', {
+            method: 'POST',
+            body: new FormData(form),
+          });
+
+          const payload = await response.json();
+
+          if (!response.ok) {
+            throw new Error(payload.error || 'Upload failed');
+          }
+
+          renderResults(payload);
+        } catch (error) {
+          status.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+        }
+      });
+
+      function renderResults(payload) {
+        if (!payload.files || payload.files.length === 0) {
+          status.innerHTML = '<div class="empty">No uploaded files were detected in the request.</div>';
+          return;
+        }
+
+        const optionSummary = `<div class="empty">Generated header options: <strong>${escapeHtml(JSON.stringify(payload.options))}</strong></div>`;
+        const cards = payload.files.map((file) => `
+          <article class="result-card">
+            <h2>${escapeHtml(file.filename)}</h2>
+            <div class="meta">
+              <span class="chip">${escapeHtml(file.fieldName || 'file')}</span>
+              <span class="chip">${escapeHtml(file.contentType)}</span>
+              <span class="chip">${escapeHtml(String(file.size))} bytes</span>
+            </div>
+            <strong>Upload part headers</strong>
+            <pre>${escapeHtml(file.rawHeaders)}</pre>
+            <strong>Upload Content-Disposition</strong>
+            <pre>${escapeHtml(file.uploadContentDisposition)}</pre>
+            <strong>Parsed upload disposition</strong>
+            <pre>${escapeHtml(JSON.stringify(file.parsedUploadDisposition, null, 2))}</pre>
+            <strong>Generated download disposition</strong>
+            <pre>${escapeHtml(file.generatedDownloadDisposition)}</pre>
+            <strong>Parsed generated disposition</strong>
+            <pre>${escapeHtml(JSON.stringify(file.reparsedGeneratedDisposition, null, 2))}</pre>
+          </article>
+        `).join('');
+
+        status.innerHTML = optionSummary + cards;
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#39;');
+      }
+    </script>
+  </body>
+</html>
