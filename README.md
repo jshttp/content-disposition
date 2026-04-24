@@ -17,7 +17,7 @@ $ npm install content-disposition
 ## API
 
 ```js
-import { create, parse } from 'content-disposition';
+import { create, parse, format } from 'content-disposition';
 ```
 
 ### create(filename, options)
@@ -62,26 +62,40 @@ and this set as the fallback field, even though they are both ISO-8859-1.
 Specifies the disposition type, defaults to `"attachment"`. This can also be
 `"inline"`, or any other value (all values except inline are treated like
 `attachment`, but can convey additional information if both parties agree to
-it). The type is normalized to lower-case.
+it).
 
 ### parse(string)
 
 ```js
-const disposition = contentDisposition.parse(
+const disposition = parse(
   'attachment; filename="EURO rates.txt"; filename*=UTF-8\'\'%e2%82%ac%20rates.txt',
 );
 ```
 
 Parse a `Content-Disposition` header string. This automatically handles extended
 ("Unicode") parameters by decoding them and providing them under the standard
-parameter name. This will return an object with the following properties (examples
-are shown for the string `'attachment; filename="EURO rates.txt"; filename*=UTF-8\'\'%e2%82%ac%20rates.txt'`):
+parameter name. This will return an object with the following properties:
 
 - `type`: The disposition type (always lower case). Example: `'attachment'`
 
 - `parameters`: An object of the parameters in the disposition (name of parameter
   always lower case and extended versions replace non-extended versions). Example:
   `{filename: "€ rates.txt"}`
+
+### format(obj)
+
+```js
+const disposition = format({
+  type: 'attachment',
+  parameters: {
+    filename: '€ rates.txt',
+  },
+});
+```
+
+Formats an object to a `Content-Disposition` header string. This automatically
+handles extended ("Unicode") parameters and returns a string. Example:
+`'attachment; filename*=UTF-8''%E2%82%AC%20rates.txt'`
 
 ## Examples
 

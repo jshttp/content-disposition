@@ -42,7 +42,7 @@ const NullObject = /* @__PURE__ */ (() => {
  */
 export function create(filename?: string, options?: CreateOptions): string {
   const type = options?.type || 'attachment';
-  const parameters = createparams(filename, options?.fallback);
+  const parameters = createParameters(filename, options?.fallback);
 
   return format({ type, parameters });
 }
@@ -111,7 +111,7 @@ export function parse(header: string): ContentDisposition {
 
         if (key.charCodeAt(key.length - 1) === 42 /* "*" */) {
           const normalizedKey = key.slice(0, -1);
-          const decoded = decodeRFC8187(value);
+          const decoded = decodeExtended(value);
           if (decoded !== undefined) {
             parameters[normalizedKey] = decoded;
             continue parameter;
@@ -142,7 +142,7 @@ const NON_LATIN1_REGEXP = /[^\x20-\x7e\xa0-\xff]/g;
 /**
  * RegExp to match chars that must be quoted-pair in RFC 2616
  */
-const QUOTE_REGEXP = /([\\"])/g;
+const QUOTE_REGEXP = /[\\"]/g;
 
 /**
  * RegExp for various RFC 2616 grammar
@@ -173,58 +173,38 @@ const TOKEN_REGEXP = /^[!#$%&'*+.0-9A-Z^_`a-z|~-]+$/;
 /**
  * Create parameters object from filename and fallback.
  */
-function createparams(
+function createParameters(
   filename?: string,
   fallback: string | boolean = true,
 ): Record<string, string> | undefined {
-  if (filename === undefined) {
-    return;
+  if (filename === undefined) return;
+
+  // Just use `filename`.
+  if (fallback === false) return { filename };
+
+  if (typeof fallback === 'string') {
+    if (!TEXT_REGEXP.test(fallback)) {
+      throw new TypeError('Fallback must be valid ISO-8859-1: ' + fallback);
+    }
+
+    if (fallback === filename) return { filename };
+    return { filename: fallback, 'filename*': encodeExtended(filename) };
   }
 
-  if (typeof filename !== 'string') {
-    throw new TypeError('filename must be a string');
-  }
+  // Use `filename` when it's simple.
+  const isSimpleFilename = TEXT_REGEXP.test(filename);
+  if (isSimpleFilename) return { filename };
 
-  if (typeof fallback !== 'string' && typeof fallback !== 'boolean') {
-    throw new TypeError('fallback must be a string or boolean');
-  }
-
-  if (typeof fallback === 'string' && NON_LATIN1_REGEXP.test(fallback)) {
-    throw new TypeError('fallback must be ISO-8859-1 string');
-  }
-
-  const params: Record<string, string> = new NullObject();
-
-  // restrict to file base name
-  const name = basename(filename);
-
-  // determine if name is suitable for quoted string
-  const isQuotedString = TEXT_REGEXP.test(name);
-
-  // generate fallback name
-  const fallbackName =
-    typeof fallback !== 'string'
-      ? fallback && getlatin1(name)
-      : basename(fallback);
-  const hasFallback = typeof fallbackName === 'string' && fallbackName !== name;
-
-  // set extended filename parameter
-  if (hasFallback || !isQuotedString || hasHexEscape(name)) {
-    params['filename*'] = name;
-  }
-
-  // set filename parameter
-  if (isQuotedString || hasFallback) {
-    params.filename = hasFallback ? fallbackName : name;
-  }
-
-  return params;
+  return {
+    filename: getlatin1(filename),
+    'filename*': encodeExtended(filename),
+  };
 }
 
 /**
  * Decode a RFC 8187 field value (gracefully).
  */
-function decodeRFC8187(str: string): string | undefined {
+export function decodeExtended(str: string): string | undefined {
   const charsetEnd = str.indexOf("'");
   if (charsetEnd <= 0) {
     return undefined;
@@ -301,39 +281,38 @@ function trailingOWS(str: string, start: number, end: number): number {
 /**
  * Format object to Content-Disposition header.
  */
-function format(obj: Partial<ContentDisposition>): string {
-  if (!obj || typeof obj !== 'object') {
-    throw new TypeError('argument obj is required');
+export function format(obj: Partial<ContentDisposition>): string {
+  const { type, parameters } = obj;
+
+  if (!type || !TOKEN_REGEXP.test(type)) {
+    throw new TypeError('Invalid type: ' + type);
   }
 
-  if (
-    !obj.type ||
-    typeof obj.type !== 'string' ||
-    !TOKEN_REGEXP.test(obj.type)
-  ) {
-    throw new TypeError('invalid type');
-  }
+  let result = type;
 
-  // start with normalized type
-  let string = obj.type.toLowerCase();
+  if (parameters) {
+    for (const param of Object.keys(parameters)) {
+      const value = parameters[param];
 
-  // append parameters
-  if (obj.parameters && typeof obj.parameters === 'object') {
-    const params = Object.keys(obj.parameters).sort();
+      if (!TOKEN_REGEXP.test(param)) {
+        throw new TypeError('Invalid parameter name: ' + param);
+      }
 
-    for (let i = 0; i < params.length; i++) {
-      const param = params[i];
+      if (TOKEN_REGEXP.test(value)) {
+        result += '; ' + param + '=' + value;
+        continue;
+      }
 
-      const val =
-        param.slice(-1) === '*'
-          ? ustring(obj.parameters[param])
-          : qstring(obj.parameters[param]);
+      if (TEXT_REGEXP.test(value)) {
+        result += '; ' + param + '=' + qstring(value);
+        continue;
+      }
 
-      string += `; ${param}=${val}`;
+      result += '; ' + param + '*=' + encodeExtended(value);
     }
   }
 
-  return string;
+  return result;
 }
 
 /**
@@ -354,48 +333,20 @@ function pencode(char: string): string {
 /**
  * Quote a string for HTTP.
  */
-function qstring(val: unknown): string {
-  const str = String(val);
-
-  return '"' + str.replace(QUOTE_REGEXP, '\\$1') + '"';
+function qstring(str: string): string {
+  return '"' + str.replace(QUOTE_REGEXP, '\\$&') + '"';
 }
 
 /**
  * Encode a Unicode string for HTTP (RFC 5987).
  */
-function ustring(val: unknown): string {
-  const str = String(val);
-
-  // percent encode as UTF-8
+export function encodeExtended(str: string): string {
   const encoded = encodeURIComponent(str).replace(
     ENCODE_URL_ATTR_CHAR_REGEXP,
     pencode,
   );
 
   return "UTF-8''" + encoded;
-}
-
-/**
- * Return the last portion of a path
- */
-function basename(path: string): string {
-  const normalized = path.replaceAll('\\', '/');
-
-  let end = normalized.length;
-  while (end > 0 && normalized[end - 1] === '/') {
-    end--;
-  }
-
-  if (end === 0) {
-    return '';
-  }
-
-  let start = end - 1;
-  while (start >= 0 && normalized[start] !== '/') {
-    start--;
-  }
-
-  return normalized.slice(start + 1, end);
 }
 
 /**
@@ -408,25 +359,6 @@ function isHexDigit(char: string): boolean {
     (code >= 65 && code <= 70) || // A-F
     (code >= 97 && code <= 102) // a-f
   );
-}
-
-/**
- * Check if a string contains percent encoding escapes.
- */
-function hasHexEscape(str: string): boolean {
-  const maxIndex = str.length - 3;
-  let lastIndex = -1;
-
-  while (
-    (lastIndex = str.indexOf('%', lastIndex + 1)) !== -1 &&
-    lastIndex <= maxIndex
-  ) {
-    if (isHexDigit(str[lastIndex + 1]) && isHexDigit(str[lastIndex + 2])) {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 /**
