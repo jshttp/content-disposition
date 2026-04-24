@@ -199,9 +199,12 @@ describe('parse(string)', function () {
           parameters: { filename: '€ rates.pdf' },
         },
       );
+    });
+
+    it('should ignore invalid percent-encodings in UTF-8 extended parameter value', function () {
       assert.deepEqual(parse("attachment; filename*=UTF-8''%E4%20rates.pdf"), {
         type: 'attachment',
-        parameters: { filename: '\ufffd rates.pdf' },
+        parameters: { 'filename*': "UTF-8''%E4%20rates.pdf" },
       });
     });
 
@@ -213,11 +216,14 @@ describe('parse(string)', function () {
           parameters: { filename: '£ rates.pdf' },
         },
       );
+    });
+
+    it('should retain invalid latin1 bytes in ISO-8859-1 extended parameter value', function () {
       assert.deepEqual(
         parse("attachment; filename*=ISO-8859-1''%82%20rates.pdf"),
         {
           type: 'attachment',
-          parameters: { filename: '? rates.pdf' },
+          parameters: { filename: '\x82 rates.pdf' },
         },
       );
     });
@@ -786,21 +792,14 @@ describe('parse(string)', function () {
         );
       });
 
-      it('should parse "attachment; filename*=iso-8859-1\'\'foo-%c3%a4-%e2%82%ac.html"', function () {
+      it('should parse iso-8859-1 extended parameter value with invalid bytes', function () {
         assert.deepEqual(
           parse("attachment; filename*=iso-8859-1''foo-%c3%a4-%e2%82%ac.html"),
           {
             type: 'attachment',
-            parameters: { filename: 'foo-Ã¤-â?¬.html' },
+            parameters: { filename: 'foo-Ã¤-â\x82¬.html' },
           },
         );
-      });
-
-      it('should parse "attachment; filename*=utf-8\'\'foo-%E4.html"', function () {
-        assert.deepEqual(parse("attachment; filename*=utf-8''foo-%E4.html"), {
-          type: 'attachment',
-          parameters: { filename: 'foo-\ufffd.html' },
-        });
       });
 
       it('should preserve spaces before the star in the parameter name', function () {
@@ -857,17 +856,17 @@ describe('parse(string)', function () {
         });
       });
 
-      it('should preserve malformed trailing percent escapes', function () {
+      it('should ignore malformed trailing percent escapes', function () {
         assert.deepEqual(parse("attachment; filename*=UTF-8''foo%"), {
           type: 'attachment',
-          parameters: { filename: 'foo%' },
+          parameters: { 'filename*': "UTF-8''foo%" },
         });
       });
 
-      it('should preserve malformed percent escapes inside the value', function () {
+      it('should ignore malformed percent escapes inside the value', function () {
         assert.deepEqual(parse("attachment; filename*=UTF-8''f%oo.html"), {
           type: 'attachment',
-          parameters: { filename: 'f%oo.html' },
+          parameters: { 'filename*': "UTF-8''f%oo.html" },
         });
       });
 
