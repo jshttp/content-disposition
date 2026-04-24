@@ -66,6 +66,48 @@ describe('format(obj)', function () {
     );
   });
 
+  describe('with "extended" option', function () {
+    it('should still format ISO-8859-1 parameter values when false', function () {
+      assert.strictEqual(
+        format(
+          {
+            type: 'attachment',
+            parameters: { filename: '£ rates.pdf' },
+          },
+          { extended: false },
+        ),
+        'attachment; filename="£ rates.pdf"',
+      );
+    });
+
+    it('should preserve pre-encoded extended parameter values when false', function () {
+      assert.strictEqual(
+        format(
+          {
+            type: 'attachment',
+            parameters: { 'filename*': "UTF-8''%E2%82%AC%20rates.pdf" },
+          },
+          { extended: false },
+        ),
+        "attachment; filename*=UTF-8''%E2%82%AC%20rates.pdf",
+      );
+    });
+
+    it('should throw for Unicode parameter values when false', function () {
+      assert.throws(
+        format.bind(
+          null,
+          {
+            type: 'attachment',
+            parameters: { filename: '€ rates.pdf' },
+          },
+          { extended: false },
+        ),
+        /invalid parameter value/i,
+      );
+    });
+  });
+
   it('should throw for missing type', function () {
     assert.throws(format.bind(null, {}), /invalid type/i);
   });
