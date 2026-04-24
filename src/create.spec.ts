@@ -307,3 +307,16 @@ describe('create(filename, options)', function () {
     });
   });
 });
+
+describe('create() regex state bug', function () {
+  it('should still throw on second call with non-ISO-8859-1 fallback', function () {
+    assert.throws(
+      create.bind(null, 'file.pdf', { fallback: '€ rates.pdf' }),
+      /fallback.*iso-8859-1/i,
+    );
+    assert.throws(
+      create.bind(null, 'file.pdf', { fallback: '€' }),
+      /fallback.*iso-8859-1/i,
+    );
+  });
+});

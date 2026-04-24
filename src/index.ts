@@ -232,8 +232,11 @@ function createparams(
     throw new TypeError('fallback must be a string or boolean');
   }
 
-  if (typeof fallback === 'string' && NON_LATIN1_REGEXP.test(fallback)) {
-    throw new TypeError('fallback must be ISO-8859-1 string');
+  if (typeof fallback === 'string') {
+    NON_LATIN1_REGEXP.lastIndex = 0;
+    if (NON_LATIN1_REGEXP.test(fallback)) {
+      throw new TypeError('fallback must be ISO-8859-1 string');
+    }
   }
 
   const params: Record<string, string> = new NullObject();
