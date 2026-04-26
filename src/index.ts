@@ -184,9 +184,6 @@ function createParameters(
 ): Record<string, string> | undefined {
   if (filename === undefined) return;
 
-  // Just use `filename`.
-  if (fallback === false) return { filename };
-
   if (typeof fallback === 'string') {
     if (!TEXT_REGEXP.test(fallback)) {
       throw new TypeError('Fallback must be valid ISO-8859-1: ' + fallback);
@@ -199,6 +196,10 @@ function createParameters(
   // Use `filename` when possible, otherwise use `filename*`.
   if (TEXT_REGEXP.test(filename) && !INVALID_FILENAME_REGEXP.test(filename)) {
     return { filename };
+  }
+
+  if (fallback === false) {
+    return { 'filename*': encodeExtended(filename) };
   }
 
   return {

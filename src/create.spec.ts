@@ -165,6 +165,13 @@ describe('create(filename, options)', function () {
         );
       });
 
+      it('should not generate fallback for Unicode filename', function () {
+        assert.strictEqual(
+          create('планы.pdf', { fallback: false }),
+          "attachment; filename*=UTF-8''%D0%BF%D0%BB%D0%B0%D0%BD%D1%8B.pdf",
+        );
+      });
+
       it('should keep ISO-8859-1 filename', function () {
         assert.strictEqual(
           create('£ rates.pdf', { fallback: false }),
