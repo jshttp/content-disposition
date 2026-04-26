@@ -135,7 +135,7 @@ describe('create(filename)', function () {
     it('should keep a simple filename', function () {
       assert.strictEqual(
         create('the%20plans.pdf'),
-        'attachment; filename=the%20plans.pdf',
+        "attachment; filename=the%20plans.pdf; filename*=UTF-8''the%2520plans.pdf",
       );
     });
 

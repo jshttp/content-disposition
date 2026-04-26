@@ -145,6 +145,11 @@ const NON_LATIN1_REGEXP = /[^\x20-\x7e\xa0-\xff]/g;
 const QUOTE_REGEXP = /[\\"]/g;
 
 /**
+ * Match chars that can't be used in the filename for compatibility.
+ */
+const INVALID_FILENAME_REGEXP = /%[0-9A-Fa-f]{2}/;
+
+/**
  * RegExp for various RFC 2616 grammar
  *
  * parameter     = token "=" ( token | quoted-string )
@@ -191,9 +196,10 @@ function createParameters(
     return { filename: fallback, 'filename*': encodeExtended(filename) };
   }
 
-  // Use `filename` when it's simple.
-  const isSimpleFilename = TEXT_REGEXP.test(filename);
-  if (isSimpleFilename) return { filename };
+  // Use `filename` when possible, otherwise use `filename*`.
+  if (TEXT_REGEXP.test(filename) && !INVALID_FILENAME_REGEXP.test(filename)) {
+    return { filename };
+  }
 
   return {
     filename: getlatin1(filename),
