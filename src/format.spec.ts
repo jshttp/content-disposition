@@ -56,6 +56,16 @@ describe('format(obj)', function () {
     );
   });
 
+  it('should maintain case sensitivity', function () {
+    assert.strictEqual(
+      format({
+        type: 'Attachment',
+        parameters: { Filename: 'Plans.pdf' },
+      }),
+      'Attachment; Filename=Plans.pdf',
+    );
+  });
+
   it('should throw for missing type', function () {
     assert.throws(format.bind(null, {}), /invalid type/i);
   });
