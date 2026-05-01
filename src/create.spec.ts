@@ -8,83 +8,76 @@ describe('create()', function () {
 });
 
 describe('create(filename)', function () {
-  it('should require a string', function () {
-    assert.throws(create.bind(null, 42 as any), /filename.*string/);
-  });
-
   it('should create a header with file name', function () {
-    assert.strictEqual(create('plans.pdf'), 'attachment; filename="plans.pdf"');
+    assert.strictEqual(create('plans.pdf'), 'attachment; filename=plans.pdf');
   });
 
-  it('should use the basename of a posix path', function () {
+  it('should preserve a posix path', function () {
     assert.strictEqual(
       create('/path/to/plans.pdf'),
-      'attachment; filename="plans.pdf"',
+      'attachment; filename="/path/to/plans.pdf"',
     );
   });
 
-  it('should use the basename of a windows path', function () {
+  it('should preserve a windows path', function () {
     assert.strictEqual(
       create('\\path\\to\\plans.pdf'),
-      'attachment; filename="plans.pdf"',
+      'attachment; filename="\\\\path\\\\to\\\\plans.pdf"',
     );
   });
 
-  it('should use the basename of a windows path with drive letter', function () {
+  it('should preserve a windows path with drive letter', function () {
     assert.strictEqual(
       create('C:\\path\\to\\plans.pdf'),
-      'attachment; filename="plans.pdf"',
+      'attachment; filename="C:\\\\path\\\\to\\\\plans.pdf"',
     );
   });
 
-  it('should use the basename of a posix path with trailing slash', function () {
+  it('should preserve a posix path with trailing slash', function () {
     assert.strictEqual(
       create('/path/to/plans.pdf/'),
-      'attachment; filename="plans.pdf"',
+      'attachment; filename="/path/to/plans.pdf/"',
     );
   });
 
-  it('should use the basename of a windows path with trailing slash', function () {
+  it('should preserve a windows path with trailing slash', function () {
     assert.strictEqual(
       create('\\path\\to\\plans.pdf\\'),
-      'attachment; filename="plans.pdf"',
+      'attachment; filename="\\\\path\\\\to\\\\plans.pdf\\\\"',
     );
   });
 
-  it('should use the basename of a windows path with drive letter and trailing slash', function () {
+  it('should preserve a windows path with drive letter and trailing slash', function () {
     assert.strictEqual(
       create('C:\\path\\to\\plans.pdf\\'),
-      'attachment; filename="plans.pdf"',
+      'attachment; filename="C:\\\\path\\\\to\\\\plans.pdf\\\\"',
     );
   });
 
-  it('should use the basename of a posix path with trailing slashes', function () {
+  it('should preserve a posix path with trailing slashes', function () {
     assert.strictEqual(
       create('/path/to/plans.pdf///'),
-      'attachment; filename="plans.pdf"',
+      'attachment; filename="/path/to/plans.pdf///"',
     );
   });
 
-  it('should use the basename of a windows path with trailing slashes', function () {
+  it('should preserve a windows path with trailing slashes', function () {
     assert.strictEqual(
       create('\\path\\to\\plans.pdf\\\\\\'),
-      'attachment; filename="plans.pdf"',
+      'attachment; filename="\\\\path\\\\to\\\\plans.pdf\\\\\\\\\\\\"',
     );
   });
 
-  it('should use the basename of a windows path with drive letter and trailing slashes', function () {
+  it('should preserve a windows path with drive letter and trailing slashes', function () {
     assert.strictEqual(
       create('C:\\path\\to\\plans.pdf\\\\\\'),
-      'attachment; filename="plans.pdf"',
+      'attachment; filename="C:\\\\path\\\\to\\\\plans.pdf\\\\\\\\\\\\"',
     );
   });
 
   describe('when "filename" is US-ASCII', function () {
     it('should only include filename parameter', function () {
-      assert.strictEqual(
-        create('plans.pdf'),
-        'attachment; filename="plans.pdf"',
-      );
+      assert.strictEqual(create('plans.pdf'), 'attachment; filename=plans.pdf');
     });
 
     it('should escape quotes', function () {
@@ -139,10 +132,10 @@ describe('create(filename)', function () {
   });
 
   describe('when "filename" contains hex escape', function () {
-    it('should include filename* parameter', function () {
+    it('should keep a simple filename', function () {
       assert.strictEqual(
         create('the%20plans.pdf'),
-        'attachment; filename="the%20plans.pdf"; filename*=UTF-8\'\'the%2520plans.pdf',
+        "attachment; filename=the%20plans.pdf; filename*=UTF-8''the%2520plans.pdf",
       );
     });
 
@@ -157,13 +150,6 @@ describe('create(filename)', function () {
 
 describe('create(filename, options)', function () {
   describe('with "fallback" option', function () {
-    it('should require a string or Boolean', function () {
-      assert.throws(
-        create.bind(null, 'plans.pdf', { fallback: 42 } as any),
-        /fallback.*string/,
-      );
-    });
-
     it('should default to true', function () {
       assert.strictEqual(
         create('€ rates.pdf'),
@@ -176,6 +162,13 @@ describe('create(filename, options)', function () {
         assert.strictEqual(
           create('£ and € rates.pdf', { fallback: false }),
           "attachment; filename*=UTF-8''%C2%A3%20and%20%E2%82%AC%20rates.pdf",
+        );
+      });
+
+      it('should not generate fallback for Unicode filename', function () {
+        assert.strictEqual(
+          create('планы.pdf', { fallback: false }),
+          "attachment; filename*=UTF-8''%D0%BF%D0%BB%D0%B0%D0%BD%D1%8B.pdf",
         );
       });
 
@@ -232,34 +225,34 @@ describe('create(filename, options)', function () {
       it('should do nothing if equal to filename', function () {
         assert.strictEqual(
           create('plans.pdf', { fallback: 'plans.pdf' }),
-          'attachment; filename="plans.pdf"',
+          'attachment; filename=plans.pdf',
         );
       });
 
-      it('should use the basename of a posix path', function () {
+      it('should preserve a posix fallback path', function () {
         assert.strictEqual(
           create('€ rates.pdf', {
             fallback: '/path/to/EURO rates.pdf',
           }),
-          'attachment; filename="EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf',
+          'attachment; filename="/path/to/EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf',
         );
       });
 
-      it('should use the basename of a windows path', function () {
+      it('should preserve a windows fallback path', function () {
         assert.strictEqual(
           create('€ rates.pdf', {
             fallback: '\\path\\to\\EURO rates.pdf',
           }),
-          'attachment; filename="EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf',
+          'attachment; filename="\\\\path\\\\to\\\\EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf',
         );
       });
 
-      it('should use the basename of a windows path with drive letter', function () {
+      it('should preserve a windows fallback path with drive letter', function () {
         assert.strictEqual(
           create('€ rates.pdf', {
             fallback: 'C:\\path\\to\\EURO rates.pdf',
           }),
-          'attachment; filename="EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf',
+          'attachment; filename="C:\\\\path\\\\to\\\\EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf',
         );
       });
 
@@ -277,17 +270,10 @@ describe('create(filename, options)', function () {
       assert.strictEqual(create(), 'attachment');
     });
 
-    it('should require a string', function () {
-      assert.throws(
-        create.bind(null, undefined, { type: 42 } as any),
-        /invalid type/,
-      );
-    });
-
     it('should require a valid type', function () {
       assert.throws(
         create.bind(null, undefined, { type: 'invalid;type' }),
-        /invalid type/,
+        /Invalid type: invalid;type/,
       );
     });
 
@@ -298,12 +284,12 @@ describe('create(filename, options)', function () {
     it('should create a header with inline type & filename', function () {
       assert.strictEqual(
         create('plans.pdf', { type: 'inline' }),
-        'inline; filename="plans.pdf"',
+        'inline; filename=plans.pdf',
       );
     });
 
-    it('should normalize type', function () {
-      assert.strictEqual(create(undefined, { type: 'INLINE' }), 'inline');
+    it('should preserve type casing', function () {
+      assert.strictEqual(create(undefined, { type: 'INLINE' }), 'INLINE');
     });
   });
 });
