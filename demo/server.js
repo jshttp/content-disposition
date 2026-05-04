@@ -97,7 +97,7 @@ async function inspectUpload(req) {
     const dispositionHeader = part.headers['content-disposition'];
     if (!dispositionHeader) continue;
 
-    const disposition = parse(dispositionHeader);
+    const disposition = parse(dispositionHeader, { multipart: true });
     const name = disposition.parameters.name || '';
     const filename = disposition.parameters.filename;
 

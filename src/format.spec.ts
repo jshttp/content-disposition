@@ -84,3 +84,59 @@ describe('format(obj)', function () {
     );
   });
 });
+
+describe('format(obj, options)', function () {
+  describe('with "multipart" option', function () {
+    it('should quote token parameter values', function () {
+      assert.strictEqual(
+        format(
+          {
+            type: 'form-data',
+            parameters: { name: 'file', filename: 'plans.pdf' },
+          },
+          { multipart: true },
+        ),
+        'form-data; name="file"; filename="plans.pdf"',
+      );
+    });
+
+    it('should percent-escape quotes and newlines', function () {
+      assert.strictEqual(
+        format(
+          {
+            type: 'form-data',
+            parameters: { name: 'a\r\nb', filename: 'the "plans".pdf' },
+          },
+          { multipart: true },
+        ),
+        'form-data; name="a%0D%0Ab"; filename="the %22plans%22.pdf"',
+      );
+    });
+
+    it('should not use extended parameters for Unicode values', function () {
+      assert.strictEqual(
+        format(
+          {
+            type: 'form-data',
+            parameters: { name: 'upload', filename: '€ rates.pdf' },
+          },
+          { multipart: true },
+        ),
+        'form-data; name="upload"; filename="€ rates.pdf"',
+      );
+    });
+
+    it('should preserve backslashes without quoted-pair escaping', function () {
+      assert.strictEqual(
+        format(
+          {
+            type: 'form-data',
+            parameters: { filename: '\\plans.pdf' },
+          },
+          { multipart: true },
+        ),
+        'form-data; filename="\\plans.pdf"',
+      );
+    });
+  });
+});

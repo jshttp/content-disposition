@@ -1,5 +1,5 @@
 import { describe, it, assert } from 'vitest';
-import { parse } from './index';
+import { parse, format } from './index';
 
 describe('parse(string)', function () {
   describe('with only type', function () {
@@ -635,10 +635,10 @@ describe('parse(string)', function () {
         });
       });
 
-      it('should treat an unterminated quoted filename as empty', function () {
+      it('should treat an unterminated quoted as omitted', function () {
         assert.deepEqual(parse('attachment; filename="bar'), {
           type: 'attachment',
-          parameters: { filename: '' },
+          parameters: {},
         });
       });
 
@@ -1030,6 +1030,88 @@ describe('parse(string)', function () {
           },
         );
       });
+    });
+  });
+});
+
+describe('parse(string, options)', function () {
+  describe('with "multipart" option', function () {
+    it('should parse browser multipart field names and filenames', function () {
+      assert.deepEqual(
+        parse('form-data; name="upload"; filename="the %22plans%22.pdf"', {
+          multipart: true,
+        }),
+        {
+          type: 'form-data',
+          parameters: { name: 'upload', filename: 'the "plans".pdf' },
+        },
+      );
+    });
+
+    it('should decode new line characters', function () {
+      assert.deepEqual(
+        parse('form-data; name="upload"; filename="foo%0abar%0d.txt"', {
+          multipart: true,
+        }),
+        {
+          type: 'form-data',
+          parameters: { name: 'upload', filename: 'foo\nbar\r.txt' },
+        },
+      );
+    });
+
+    it('should handle incomplete percent escapes', function () {
+      assert.deepEqual(
+        parse('form-data; name="upload"; filename="foo%2"', {
+          multipart: true,
+        }),
+        {
+          type: 'form-data',
+          parameters: { name: 'upload', filename: 'foo%2' },
+        },
+      );
+    });
+
+    it('should preserve Unicode values', function () {
+      assert.deepEqual(
+        parse('form-data; name="upload"; filename="€ rates.pdf"', {
+          multipart: true,
+        }),
+        {
+          type: 'form-data',
+          parameters: { name: 'upload', filename: '€ rates.pdf' },
+        },
+      );
+    });
+
+    it('should not decode other percent escapes', function () {
+      assert.deepEqual(
+        parse('form-data; name="foo%20bar"; filename="foo%41bar.txt"', {
+          multipart: true,
+        }),
+        {
+          type: 'form-data',
+          parameters: { name: 'foo%20bar', filename: 'foo%41bar.txt' },
+        },
+      );
+    });
+
+    it('should roundtrip percent escapes', function () {
+      assert.deepEqual(
+        parse(
+          format({
+            type: 'form-data',
+            parameters: { name: 'foo\nbar', filename: 'foo\rbar.txt' },
+          }),
+          {
+            multipart: true,
+          },
+        ),
+        {
+          type: 'form-data',
+          parameters: { name: 'foo\nbar', filename: 'foo\rbar.txt' },
+        },
+      );
     });
   });
 });
