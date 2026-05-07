@@ -431,14 +431,9 @@ function qmultipart(str: string): string {
  * Escape a multipart/form-data string character.
  */
 function multipartEscape(char: string): string {
-  switch (char) {
-    case '\n':
-      return '%0A';
-    case '\r':
-      return '%0D';
-    default:
-      return '%22';
-  }
+  if (char === '\n') return '%0A';
+  if (char === '\r') return '%0D';
+  return '%22';
 }
 
 /**
