@@ -88,18 +88,25 @@ describe('create(filename)', function () {
     });
   });
 
-  describe('when "filename" is ISO-8859-1', function () {
-    it('should only include filename parameter', function () {
+  describe('when "filename" is not US-ASCII', function () {
+    it('should include filename* parameter for ISO-8859-1', function () {
       assert.strictEqual(
         create('«plans».pdf'),
-        'attachment; filename="«plans».pdf"',
+        'attachment; filename="?plans?.pdf"; filename*=UTF-8\'\'%C2%ABplans%C2%BB.pdf',
       );
     });
 
-    it('should escape quotes', function () {
+    it('should include filename* parameter for ISO-8859-1 with quotes', function () {
       assert.strictEqual(
         create('the "plans" (1µ).pdf'),
-        'attachment; filename="the \\"plans\\" (1µ).pdf"',
+        'attachment; filename="the \\"plans\\" (1?).pdf"; filename*=UTF-8\'\'the%20%22plans%22%20%281%C2%B5%29.pdf',
+      );
+    });
+
+    it('should include filename* parameter for latin characters with diacritics', function () {
+      assert.strictEqual(
+        create('foo-ä.html'),
+        'attachment; filename="foo-?.html"; filename*=UTF-8\'\'foo-%C3%A4.html',
       );
     });
   });
@@ -115,7 +122,7 @@ describe('create(filename)', function () {
     it('should include filename fallback', function () {
       assert.strictEqual(
         create('£ and € rates.pdf'),
-        'attachment; filename="£ and ? rates.pdf"; filename*=UTF-8\'\'%C2%A3%20and%20%E2%82%AC%20rates.pdf',
+        'attachment; filename="? and ? rates.pdf"; filename*=UTF-8\'\'%C2%A3%20and%20%E2%82%AC%20rates.pdf',
       );
       assert.strictEqual(
         create('€ rates.pdf'),
@@ -142,7 +149,7 @@ describe('create(filename)', function () {
     it('should handle Unicode', function () {
       assert.strictEqual(
         create('€%20£.pdf'),
-        'attachment; filename="?%20£.pdf"; filename*=UTF-8\'\'%E2%82%AC%2520%C2%A3.pdf',
+        'attachment; filename="?%20?.pdf"; filename*=UTF-8\'\'%E2%82%AC%2520%C2%A3.pdf',
       );
     });
   });
@@ -158,7 +165,7 @@ describe('create(filename, options)', function () {
     });
 
     describe('when "false"', function () {
-      it('should not generate ISO-8859-1 fallback', function () {
+      it('should not generate US-ASCII fallback', function () {
         assert.strictEqual(
           create('£ and € rates.pdf', { fallback: false }),
           "attachment; filename*=UTF-8''%C2%A3%20and%20%E2%82%AC%20rates.pdf",
@@ -172,53 +179,53 @@ describe('create(filename, options)', function () {
         );
       });
 
-      it('should keep ISO-8859-1 filename', function () {
+      it('should not use filename for ISO-8859-1 filename', function () {
         assert.strictEqual(
           create('£ rates.pdf', { fallback: false }),
-          'attachment; filename="£ rates.pdf"',
+          "attachment; filename*=UTF-8''%C2%A3%20rates.pdf",
         );
       });
     });
 
     describe('when "true"', function () {
-      it('should generate ISO-8859-1 fallback', function () {
+      it('should generate US-ASCII fallback', function () {
         assert.strictEqual(
           create('£ and € rates.pdf', { fallback: true }),
-          'attachment; filename="£ and ? rates.pdf"; filename*=UTF-8\'\'%C2%A3%20and%20%E2%82%AC%20rates.pdf',
+          'attachment; filename="? and ? rates.pdf"; filename*=UTF-8\'\'%C2%A3%20and%20%E2%82%AC%20rates.pdf',
         );
       });
 
-      it('should pass through ISO-8859-1 filename', function () {
+      it('should generate fallback for ISO-8859-1 filename', function () {
         assert.strictEqual(
           create('£ rates.pdf', { fallback: true }),
-          'attachment; filename="£ rates.pdf"',
+          'attachment; filename="? rates.pdf"; filename*=UTF-8\'\'%C2%A3%20rates.pdf',
         );
       });
     });
 
     describe('when a string', function () {
-      it('should require an ISO-8859-1 string', function () {
+      it('should require a US-ASCII string', function () {
         assert.throws(
-          create.bind(null, '€ rates.pdf', {
-            fallback: '€ rates.pdf',
+          create.bind(null, '£ rates.pdf', {
+            fallback: '£ rates.pdf',
           }),
-          /fallback.*iso-8859-1/i,
+          /fallback.*us-ascii/i,
         );
       });
 
-      it('should use as ISO-8859-1 fallback', function () {
+      it('should use as US-ASCII fallback', function () {
         assert.strictEqual(
           create('£ and € rates.pdf', {
-            fallback: '£ and EURO rates.pdf',
+            fallback: 'GBP and EURO rates.pdf',
           }),
-          'attachment; filename="£ and EURO rates.pdf"; filename*=UTF-8\'\'%C2%A3%20and%20%E2%82%AC%20rates.pdf',
+          'attachment; filename="GBP and EURO rates.pdf"; filename*=UTF-8\'\'%C2%A3%20and%20%E2%82%AC%20rates.pdf',
         );
       });
 
-      it('should use as fallback even when filename is ISO-8859-1', function () {
+      it('should use as fallback even when filename is not US-ASCII', function () {
         assert.strictEqual(
-          create('"£ rates".pdf', { fallback: '£ rates.pdf' }),
-          'attachment; filename="£ rates.pdf"; filename*=UTF-8\'\'%22%C2%A3%20rates%22.pdf',
+          create('"£ rates".pdf', { fallback: 'GBP rates.pdf' }),
+          'attachment; filename="GBP rates.pdf"; filename*=UTF-8\'\'%22%C2%A3%20rates%22.pdf',
         );
       });
 

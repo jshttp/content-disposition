@@ -40,22 +40,22 @@ the `'binary'` encoding in Node.js.
 
 ##### fallback
 
-If the `filename` option is outside ISO-8859-1, then the file name is actually
+If the `filename` option is outside US-ASCII, then the file name is actually
 stored in a supplemental field for clients that support Unicode file names and
-a ISO-8859-1 version of the file name is automatically generated.
+a US-ASCII version of the file name is automatically generated.
 
-This specifies the ISO-8859-1 file name to override the automatic generation or
+This specifies the US-ASCII file name to override the automatic generation or
 disables the generation all together, defaults to `true`.
 
-- A string will specify the ISO-8859-1 file name to use in place of automatic
+- A string will specify the US-ASCII file name to use in place of automatic
   generation.
-- `false` will disable including a ISO-8859-1 file name and only include the
-  Unicode version (unless the file name is already ISO-8859-1).
-- `true` will enable automatic generation if the file name is outside ISO-8859-1.
+- `false` will disable including a US-ASCII file name and only include the
+  Unicode version (unless the file name is already US-ASCII).
+- `true` will enable automatic generation if the file name is outside US-ASCII.
 
-If the `filename` option is ISO-8859-1 and this option is specified and has a
+If the `filename` option is US-ASCII and this option is specified and has a
 different value, then the `filename` option is encoded in the extended field
-and this set as the fallback field, even though they are both ISO-8859-1.
+and this set as the fallback field, even though they are both US-ASCII.
 
 ##### type
 
