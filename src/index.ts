@@ -28,6 +28,22 @@ export interface CreateOptions {
   fallback?: string | boolean;
 }
 
+export interface ParseOptions {
+  /**
+   * Parse parameters as sent by browsers in `multipart/form-data`.
+   * @default false
+   */
+  multipart?: boolean;
+}
+
+export interface FormatOptions {
+  /**
+   * Format parameters as sent by browsers in `multipart/form-data`.
+   * @default false
+   */
+  multipart?: boolean;
+}
+
 /**
  * Null object perf optimization. Faster than `Object.create(null)` and `{ __proto__: null }`.
  */
@@ -57,8 +73,12 @@ const BSLASH = 92; // "\\"
 /**
  * Parse Content-Disposition header string.
  */
-export function parse(header: string): ContentDisposition {
+export function parse(
+  header: string,
+  options?: ParseOptions,
+): ContentDisposition {
   const len = header.length;
+  const multipart = options?.multipart === true;
   let index = skipOWS(header, 0, header.length);
 
   const typeStart = index;
@@ -87,21 +107,62 @@ export function parse(header: string): ContentDisposition {
           index++;
 
           let value = '';
-          while (index < len) {
-            const code = header.charCodeAt(index++);
-            if (code === DQUOTE) {
-              index = parseToken(header, index, len);
-              if (parameters[key] === undefined) parameters[key] = value;
-              continue parameter;
-            }
 
-            if (code === BSLASH && index < len) {
-              value += header[index++];
-              continue;
-            }
+          if (multipart) {
+            while (index < len) {
+              const code = header.charCodeAt(index++);
+              if (code === DQUOTE) {
+                index = parseToken(header, index, len);
+                if (parameters[key] === undefined) parameters[key] = value;
+                break;
+              }
 
-            value += String.fromCharCode(code);
+              if (code === /* % */ 37 && index + 1 < len) {
+                const code2 = header.charCodeAt(index);
+                const code3 = header.charCodeAt(index + 1);
+
+                if (code2 === 50 /* "2" */ && code3 === 50 /* "2" */) {
+                  value += '"';
+                  index += 2;
+                  continue;
+                }
+
+                if (code2 === 48 /* "0" */) {
+                  if (code3 === 100 /* "d" */ || code3 === 68 /* "D" */) {
+                    value += '\r';
+                    index += 2;
+                    continue;
+                  }
+
+                  if (code3 === 97 /* "a" */ || code3 === 65 /* "A" */) {
+                    value += '\n';
+                    index += 2;
+                    continue;
+                  }
+                }
+              }
+
+              value += String.fromCharCode(code);
+            }
+          } else {
+            while (index < len) {
+              const code = header.charCodeAt(index++);
+              if (code === DQUOTE) {
+                index = parseToken(header, index, len);
+                if (parameters[key] === undefined) parameters[key] = value;
+                break;
+              }
+
+              if (code === BSLASH && index < len) {
+                value += header[index++];
+                continue;
+              }
+
+              value += String.fromCharCode(code);
+            }
           }
+
+          continue parameter;
         }
 
         const valueStart = index;
@@ -292,8 +353,12 @@ function trailingOWS(str: string, start: number, end: number): number {
 /**
  * Format object to Content-Disposition header.
  */
-export function format(obj: Partial<ContentDisposition>): string {
+export function format(
+  obj: Partial<ContentDisposition>,
+  options?: FormatOptions,
+): string {
   const { type, parameters } = obj;
+  const multipart = options?.multipart === true;
 
   if (!type || !TOKEN_REGEXP.test(type)) {
     throw new TypeError('Invalid type: ' + type);
@@ -307,6 +372,11 @@ export function format(obj: Partial<ContentDisposition>): string {
 
       if (!TOKEN_REGEXP.test(param)) {
         throw new TypeError('Invalid parameter name: ' + param);
+      }
+
+      if (multipart) {
+        result += '; ' + param + '=' + qmultipart(value);
+        continue;
       }
 
       if (TOKEN_REGEXP.test(value)) {
@@ -346,6 +416,24 @@ function pencode(char: string): string {
  */
 function qstring(str: string): string {
   return '"' + str.replace(QUOTE_REGEXP, '\\$&') + '"';
+}
+
+/**
+ * Quote a string for multipart/form-data.
+ *
+ * @see https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#multipart-form-data
+ */
+function qmultipart(str: string): string {
+  return '"' + str.replace(/[\n\r"]/g, multipartEscape) + '"';
+}
+
+/**
+ * Escape a multipart/form-data string character.
+ */
+function multipartEscape(char: string): string {
+  if (char === '\n') return '%0A';
+  if (char === '\r') return '%0D';
+  return '%22';
 }
 
 /**

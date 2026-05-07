@@ -64,7 +64,7 @@ Specifies the disposition type, defaults to `"attachment"`. This can also be
 `attachment`, but can convey additional information if both parties agree to
 it).
 
-### parse(string)
+### parse(string, options)
 
 ```js
 const disposition = parse(
@@ -82,7 +82,19 @@ parameter name. This will return an object with the following properties:
   always lower case and extended versions replace non-extended versions). Example:
   `{filename: "€ rates.txt"}`
 
-### format(obj)
+#### Options
+
+##### multipart
+
+Parse parameters using browser `multipart/form-data` behavior.
+
+```js
+parse('form-data; name="file"; filename="the %22plans%22.pdf"', {
+  multipart: true,
+});
+```
+
+### format(obj, options)
 
 ```js
 const disposition = format({
@@ -96,6 +108,24 @@ const disposition = format({
 Formats an object to a `Content-Disposition` header string. This automatically
 handles extended ("Unicode") parameters and returns a string. Example:
 `'attachment; filename*=UTF-8''%E2%82%AC%20rates.txt'`
+
+#### Options
+
+##### multipart
+
+Format parameters using browser `multipart/form-data` behavior. This quotes
+parameter values, escapes `"` as `%22`, and writes Unicode values directly
+instead of using extended parameters.
+
+```js
+format(
+  {
+    type: 'form-data',
+    parameters: { name: 'file', filename: '€ rates.txt' },
+  },
+  { multipart: true },
+);
+```
 
 ## Examples
 
