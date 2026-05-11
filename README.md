@@ -94,6 +94,11 @@ parse('form-data; name="file"; filename="the %22plans%22.pdf"', {
 });
 ```
 
+##### extended
+
+Parse RFC 5987 extended header parameters automatically when decoding
+parameters, defaults to `true`.
+
 ### format(obj, options)
 
 ```js
@@ -126,6 +131,11 @@ format(
   { multipart: true },
 );
 ```
+
+##### extended
+
+Encode Unicode parameter values using RFC 5987 extended header parameters,
+e.g. `filename*=`, defaults to `true`.
 
 ## Examples
 

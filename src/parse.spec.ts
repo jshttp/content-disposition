@@ -228,6 +228,13 @@ describe('parse(string)', function () {
       );
     });
 
+    it('should parse iso-8859-1 extended parameter value containing ASCII only', function () {
+      assert.deepEqual(parse("attachment; filename*=ISO-8859-1''ABC.pdf"), {
+        type: 'attachment',
+        parameters: { filename: 'ABC.pdf' },
+      });
+    });
+
     it('should not be case-sensitive for charset', function () {
       assert.deepEqual(
         parse("attachment; filename*=utf-8''%E2%82%AC%20rates.pdf"),
@@ -292,6 +299,36 @@ describe('parse(string)', function () {
           },
         },
       );
+    });
+
+    describe('when "extended" option is false', function () {
+      it('should preserve extended parameter value without decoding', function () {
+        assert.deepEqual(
+          parse("attachment; filename*=UTF-8''%E2%82%AC%20rates.pdf", {
+            extended: false,
+          }),
+          {
+            type: 'attachment',
+            parameters: { 'filename*': "UTF-8''%E2%82%AC%20rates.pdf" },
+          },
+        );
+      });
+
+      it('should preserve both fallback and extended parameter values', function () {
+        assert.deepEqual(
+          parse(
+            'attachment; filename="EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf',
+            { extended: false },
+          ),
+          {
+            type: 'attachment',
+            parameters: {
+              filename: 'EURO rates.pdf',
+              'filename*': "UTF-8''%E2%82%AC%20rates.pdf",
+            },
+          },
+        );
+      });
     });
   });
 
@@ -1060,6 +1097,18 @@ describe('parse(string, options)', function () {
       );
     });
 
+    it('should decode uppercase line feed escapes', function () {
+      assert.deepEqual(
+        parse('form-data; name="upload"; filename="foo%0Abar%0D.txt"', {
+          multipart: true,
+        }),
+        {
+          type: 'form-data',
+          parameters: { name: 'upload', filename: 'foo\nbar\r.txt' },
+        },
+      );
+    });
+
     it('should handle incomplete percent escapes', function () {
       assert.deepEqual(
         parse('form-data; name="upload"; filename="foo%2"', {
@@ -1101,7 +1150,7 @@ describe('parse(string, options)', function () {
         parse(
           format({
             type: 'form-data',
-            parameters: { name: 'foo\nbar', filename: 'foo\rbar.txt' },
+            parameters: { name: 'foo\nbar', filename: '"foo\rbar".txt' },
           }),
           {
             multipart: true,
@@ -1109,7 +1158,7 @@ describe('parse(string, options)', function () {
         ),
         {
           type: 'form-data',
-          parameters: { name: 'foo\nbar', filename: 'foo\rbar.txt' },
+          parameters: { name: 'foo\nbar', filename: '"foo\rbar".txt' },
         },
       );
     });

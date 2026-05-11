@@ -15,6 +15,15 @@ export interface ContentDisposition {
   parameters: Record<string, string>;
 }
 
+/**
+ * Null object perf optimization. Faster than `Object.create(null)` and `{ __proto__: null }`.
+ */
+const NullObject = /* @__PURE__ */ (() => {
+  const C = function () {};
+  C.prototype = Object.create(null);
+  return C;
+})() as unknown as { new (): any };
+
 export interface CreateOptions {
   /**
    * Content-Disposition type, defaults to "attachment"
@@ -28,31 +37,6 @@ export interface CreateOptions {
   fallback?: string | boolean;
 }
 
-export interface ParseOptions {
-  /**
-   * Parse parameters as sent by browsers in `multipart/form-data`.
-   * @default false
-   */
-  multipart?: boolean;
-}
-
-export interface FormatOptions {
-  /**
-   * Format parameters as sent by browsers in `multipart/form-data`.
-   * @default false
-   */
-  multipart?: boolean;
-}
-
-/**
- * Null object perf optimization. Faster than `Object.create(null)` and `{ __proto__: null }`.
- */
-const NullObject = /* @__PURE__ */ (() => {
-  const C = function () {};
-  C.prototype = Object.create(null);
-  return C;
-})() as unknown as { new (): any };
-
 /**
  * Create an attachment Content-Disposition header.
  */
@@ -60,7 +44,7 @@ export function create(filename?: string, options?: CreateOptions): string {
   const type = options?.type || 'attachment';
   const parameters = createParameters(filename, options?.fallback);
 
-  return format({ type, parameters });
+  return format({ type, parameters }, { extended: false });
 }
 
 const SP = 32; // " "
@@ -69,6 +53,20 @@ const SEMI = 59; // ";"
 const EQ = 61; // "="
 const DQUOTE = 34; // '"'
 const BSLASH = 92; // "\\"
+const ASTERISK = 42; // "*"
+
+export interface ParseOptions {
+  /**
+   * Whether to decode RFC 8187 encoded parameters.
+   * @default true
+   */
+  extended?: boolean;
+  /**
+   * Parse parameters as sent by browsers in `multipart/form-data`.
+   * @default false
+   */
+  multipart?: boolean;
+}
 
 /**
  * Parse Content-Disposition header string.
@@ -79,6 +77,7 @@ export function parse(
 ): ContentDisposition {
   const len = header.length;
   const multipart = options?.multipart === true;
+  const extended = options?.extended !== false;
   let index = skipOWS(header, 0, header.length);
 
   const typeStart = index;
@@ -170,7 +169,7 @@ export function parse(
         const valueEnd = trailingOWS(header, valueStart, index);
         const value = header.slice(valueStart, valueEnd);
 
-        if (key.charCodeAt(key.length - 1) === 42 /* "*" */) {
+        if (extended && key.charCodeAt(key.length - 1) === ASTERISK) {
           const normalizedKey = key.slice(0, -1);
           const decoded = decodeExtended(value);
           if (decoded !== undefined) {
@@ -350,6 +349,20 @@ function trailingOWS(str: string, start: number, end: number): number {
   return end;
 }
 
+export interface FormatOptions {
+  /**
+   * Whether to use extended parameter encoding for non-ISO-8859-1 strings.
+   * If false, an error will be thrown when formatting such strings.
+   * @default true
+   */
+  extended?: boolean;
+  /**
+   * Format parameters as sent by browsers in `multipart/form-data`.
+   * @default false
+   */
+  multipart?: boolean;
+}
+
 /**
  * Format object to Content-Disposition header.
  */
@@ -359,6 +372,7 @@ export function format(
 ): string {
   const { type, parameters } = obj;
   const multipart = options?.multipart === true;
+  const extended = options?.extended !== false;
 
   if (!type || !TOKEN_REGEXP.test(type)) {
     throw new TypeError('Invalid type: ' + type);
@@ -387,6 +401,10 @@ export function format(
       if (TEXT_REGEXP.test(value)) {
         result += '; ' + param + '=' + qstring(value);
         continue;
+      }
+
+      if (!extended) {
+        throw new TypeError('Invalid parameter value: ' + value);
       }
 
       result += '; ' + param + '*=' + encodeExtended(value);
