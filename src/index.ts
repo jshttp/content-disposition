@@ -232,8 +232,8 @@ const INVALID_FILENAME_REGEXP = /%[0-9A-Fa-f]{2}/;
  * CTL           = <any US-ASCII control character (octets 0 - 31) and DEL (127)>
  * OCTET         = <any 8-bit sequence of data>
  */
-const TEXT_REGEXP = /^[\x20-\x7e\x80-\xff]+$/;
-const ASCII_TEXT_REGEXP = /^[\x20-\x7e]+$/;
+const TEXT_REGEXP = /^[\x20-\x7e\x80-\xff]*$/;
+const ASCII_TEXT_REGEXP = /^[\x20-\x7e]*$/;
 const TOKEN_REGEXP = /^[!#$%&'*+.0-9A-Z^_`a-z|~-]+$/;
 
 /**
