@@ -26,6 +26,16 @@ describe('format(obj)', function () {
     );
   });
 
+  it('should quote empty parameter values', function () {
+    assert.strictEqual(
+      format({
+        type: 'attachment',
+        parameters: { filename: '' },
+      }),
+      'attachment; filename=""',
+    );
+  });
+
   it('should escape quotes and backslashes in quoted values', function () {
     assert.strictEqual(
       format({

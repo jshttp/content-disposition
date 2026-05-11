@@ -12,6 +12,10 @@ describe('create(filename)', function () {
     assert.strictEqual(create('plans.pdf'), 'attachment; filename=plans.pdf');
   });
 
+  it('should create a header with empty file name', function () {
+    assert.strictEqual(create(''), 'attachment; filename=""');
+  });
+
   it('should preserve a posix path', function () {
     assert.strictEqual(
       create('/path/to/plans.pdf'),
