@@ -788,7 +788,7 @@ describe('parse(string)', function () {
       });
     });
 
-    describe('RFC 2231/5987 Encoding: Character Sets', function () {
+    describe('RFC 8187 Encoding: Character Sets', function () {
       it('should parse "attachment; filename*=iso-8859-1\'\'foo-%E4.html"', function () {
         assert.deepEqual(
           parse("attachment; filename*=iso-8859-1''foo-%E4.html"),

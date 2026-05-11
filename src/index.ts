@@ -455,7 +455,7 @@ function multipartEscape(char: string): string {
 }
 
 /**
- * Encode a Unicode string for HTTP (RFC 5987).
+ * Encode a Unicode string for HTTP (RFC 8187).
  */
 export function encodeExtended(str: string): string {
   const encoded = encodeURIComponent(str).replace(
