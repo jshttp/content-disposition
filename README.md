@@ -184,11 +184,15 @@ $ npm test
 - [RFC 2616: Hypertext Transfer Protocol -- HTTP/1.1][rfc-2616]
 - [RFC 5987: Character Set and Language Encoding for Hypertext Transfer Protocol (HTTP) Header Field Parameters][rfc-5987]
 - [RFC 6266: Use of the Content-Disposition Header Field in the Hypertext Transfer Protocol (HTTP)][rfc-6266]
+- [RFC 8187: Indicating Character Encoding and Language for HTTP Header Field Parameters][rfc-8187]
+- [HTML Living Standard: Multipart form data][html-form]
 - [Test Cases for HTTP Content-Disposition header field (RFC 6266) and the Encodings defined in RFCs 2047, 2231 and 5987][tc-2231]
 
 [rfc-2616]: https://datatracker.ietf.org/doc/html/rfc2616
 [rfc-5987]: https://datatracker.ietf.org/doc/html/rfc5987
 [rfc-6266]: https://datatracker.ietf.org/doc/html/rfc6266
+[rfc-8187]: https://datatracker.ietf.org/doc/html/rfc8187
+[html-form]: https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#multipart-form-data
 [tc-2231]: http://greenbytes.de/tech/tc2231/
 
 ## License
