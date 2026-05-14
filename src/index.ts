@@ -247,7 +247,9 @@ function createParameters(
 
   if (typeof fallback === 'string') {
     if (!ASCII_TEXT_REGEXP.test(fallback)) {
-      throw new TypeError('Fallback must be valid US-ASCII: ' + fallback);
+      throw new TypeError(
+        `Fallback must be valid US-ASCII: ${JSON.stringify(fallback)}`,
+      );
     }
 
     if (fallback === filename) return { filename };
@@ -375,7 +377,7 @@ export function format(
   const extended = options?.extended !== false;
 
   if (!type || !TOKEN_REGEXP.test(type)) {
-    throw new TypeError('Invalid type: ' + type);
+    throw new TypeError(`Invalid type: ${JSON.stringify(type)}`);
   }
 
   let result = type;
@@ -385,7 +387,7 @@ export function format(
       const value = parameters[param];
 
       if (!TOKEN_REGEXP.test(param)) {
-        throw new TypeError('Invalid parameter name: ' + param);
+        throw new TypeError(`Invalid parameter name: ${JSON.stringify(param)}`);
       }
 
       if (multipart) {
@@ -404,7 +406,9 @@ export function format(
       }
 
       if (!extended) {
-        throw new TypeError('Invalid parameter value: ' + value);
+        throw new TypeError(
+          `Invalid parameter value: ${JSON.stringify(value)}`,
+        );
       }
 
       result += '; ' + param + '*=' + encodeExtended(value);

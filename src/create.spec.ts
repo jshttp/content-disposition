@@ -280,7 +280,7 @@ describe('create(filename, options)', function () {
     it('should require a valid type', function () {
       assert.throws(
         create.bind(null, undefined, { type: 'invalid;type' }),
-        /Invalid type: invalid;type/,
+        /Invalid type: "invalid;type"/,
       );
     });
 
