@@ -169,16 +169,16 @@ export function parse(
         const valueEnd = trailingOWS(header, valueStart, index);
         const value = header.slice(valueStart, valueEnd);
 
-        if (extended && key.charCodeAt(key.length - 1) === ASTERISK) {
-          const normalizedKey = key.slice(0, -1);
-          const decoded = decodeExtended(value);
-          if (decoded !== undefined) {
-            parameters[normalizedKey] = decoded;
-            continue parameter;
+        if (parameters[key] === undefined) {
+          parameters[key] = value;
+
+          if (extended && key.charCodeAt(key.length - 1) === ASTERISK) {
+            const normalizedKey = key.slice(0, -1);
+            const decoded = decodeExtended(value);
+            if (decoded !== undefined) parameters[normalizedKey] = decoded;
           }
         }
 
-        if (parameters[key] === undefined) parameters[key] = value;
         continue parameter;
       }
 
