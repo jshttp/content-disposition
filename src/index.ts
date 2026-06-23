@@ -481,22 +481,27 @@ function isHexDigit(char: string): boolean {
 /**
  * Decode hex escapes in a string (e.g., %20 -> space)
  */
-function decodeHexEscapes(str: string): string {
+function decodeHexEscapes(str: string): string | undefined {
   const firstEscape = str.indexOf('%');
   if (firstEscape === -1) return str;
 
   let result = str.slice(0, firstEscape);
   for (let idx = firstEscape; idx < str.length; idx++) {
-    if (
-      str[idx] === '%' &&
-      idx + 2 < str.length &&
-      isHexDigit(str[idx + 1]) &&
-      isHexDigit(str[idx + 2])
-    ) {
-      result += String.fromCharCode(
-        Number.parseInt(str[idx + 1] + str[idx + 2], 16),
-      );
-      idx += 2;
+    if (str[idx] === '%') {
+      if (
+        idx + 2 < str.length &&
+        isHexDigit(str[idx + 1]) &&
+        isHexDigit(str[idx + 2])
+      ) {
+        result += String.fromCharCode(
+          Number.parseInt(str[idx + 1] + str[idx + 2], 16),
+        );
+        idx += 2;
+      } else {
+        // malformed percent-encoding: reject per RFC 8187 3.2.1, matching the
+        // UTF-8 path, so the unprocessable ext-value is ignored
+        return undefined;
+      }
     } else {
       result += str[idx];
     }
