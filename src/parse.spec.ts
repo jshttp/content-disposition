@@ -267,7 +267,9 @@ describe('parse(string)', function () {
 
     it('should fall back to filename when ISO-8859-1 filename* is malformed', function () {
       assert.deepEqual(
-        parse("attachment; filename=\"invoice.pdf\"; filename*=ISO-8859-1''report%2"),
+        parse(
+          'attachment; filename="invoice.pdf"; filename*=ISO-8859-1\'\'report%2',
+        ),
         {
           type: 'attachment',
           parameters: {
