@@ -48,5 +48,9 @@
     "project": [
       "tsconfig.build.json"
     ]
+  },
+  "homepage": "https://github.com/jshttp/content-disposition",
+  "bugs": {
+    "url": "https://github.com/jshttp/content-disposition/issues"
   }
 }
