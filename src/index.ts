@@ -172,7 +172,11 @@ export function parse(
         if (parameters[key] === undefined) {
           parameters[key] = value;
 
-          if (extended && key.charCodeAt(key.length - 1) === ASTERISK) {
+          if (
+            extended &&
+            key.charCodeAt(key.length - 1) === ASTERISK &&
+            !CONTINUATION_REGEXP.test(key)
+          ) {
             const normalizedKey = key.slice(0, -1);
             const decoded = decodeExtended(value);
             if (decoded !== undefined) parameters[normalizedKey] = decoded;
@@ -186,7 +190,77 @@ export function parse(
     }
   }
 
+  if (extended) resolveContinuations(parameters);
+
   return { type, parameters };
+}
+
+interface ContinuationPart {
+  key: string;
+  value: string;
+  index: number;
+  encoded: boolean;
+}
+
+const CONTINUATION_REGEXP = /^(.+)\*(0|[1-9]\d*)(\*)?$/;
+
+/**
+ * Resolve RFC 2231 parameter continuations into their base parameter.
+ */
+function resolveContinuations(parameters: Record<string, string>): void {
+  const continuations: Record<string, ContinuationPart[]> = new NullObject();
+
+  for (const key of Object.keys(parameters)) {
+    const match = CONTINUATION_REGEXP.exec(key);
+    if (!match) continue;
+
+    const base = match[1];
+    const parts = continuations[base] || (continuations[base] = []);
+
+    parts.push({
+      key,
+      value: parameters[key],
+      index: Number.parseInt(match[2], 10),
+      encoded: match[3] === '*',
+    });
+  }
+
+  for (const base of Object.keys(continuations)) {
+    if (parameters[base + '*'] !== undefined) continue;
+
+    const parts = continuations[base].sort((a, b) => a.index - b.index);
+    if (parts.length < 2) continue;
+    if (!isContiguousContinuation(parts)) continue;
+
+    const encoded = parts[0].encoded;
+    let value: string | undefined;
+
+    if (encoded) {
+      value = decodeExtended(parts.map((part) => part.value).join(''));
+      if (value === undefined) continue;
+    } else {
+      if (parts.some((part) => part.encoded)) continue;
+      if (parameters[base] !== undefined) continue;
+      value = parts.map((part) => part.value).join('');
+    }
+
+    parameters[base] = value;
+
+    for (const part of parts) {
+      delete parameters[part.key];
+    }
+  }
+}
+
+/**
+ * Check that continuation segments start at zero and have no gaps.
+ */
+function isContiguousContinuation(parts: ContinuationPart[]): boolean {
+  for (let index = 0; index < parts.length; index++) {
+    if (parts[index].index !== index) return false;
+  }
+
+  return true;
 }
 
 /**

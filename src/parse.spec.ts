@@ -389,6 +389,72 @@ describe('parse(string)', function () {
     });
   });
 
+  describe('with parameter continuations', function () {
+    it('should parse quoted continuation values', function () {
+      assert.deepEqual(
+        parse('attachment; filename*0="foo."; filename*1="html"'),
+        {
+          type: 'attachment',
+          parameters: { filename: 'foo.html' },
+        },
+      );
+    });
+
+    it('should parse token continuation values', function () {
+      assert.deepEqual(parse('attachment; filename*0=foo.; filename*1=html'), {
+        type: 'attachment',
+        parameters: { filename: 'foo.html' },
+      });
+    });
+
+    it('should parse encoded continuation values', function () {
+      assert.deepEqual(
+        parse("attachment; filename*0*=UTF-8''foo-%c3%a4; filename*1=.html"),
+        {
+          type: 'attachment',
+          parameters: { filename: 'foo-ä.html' },
+        },
+      );
+    });
+
+    it('should prefer an encoded continuation over a fallback filename', function () {
+      assert.deepEqual(
+        parse(
+          'attachment; filename="fallback.html"; filename*0*=UTF-8\'\'foo-%c3%a4; filename*1=.html',
+        ),
+        {
+          type: 'attachment',
+          parameters: { filename: 'foo-ä.html' },
+        },
+      );
+    });
+
+    it('should preserve invalid encoded continuation values', function () {
+      assert.deepEqual(
+        parse("attachment; filename*0*=UTF-8''%E4; filename*1=.html"),
+        {
+          type: 'attachment',
+          parameters: {
+            'filename*0*': "UTF-8''%E4",
+            'filename*1': '.html',
+          },
+        },
+      );
+    });
+
+    it('should preserve continuations when "extended" option is false', function () {
+      assert.deepEqual(
+        parse('attachment; filename*0="foo."; filename*1="html"', {
+          extended: false,
+        }),
+        {
+          type: 'attachment',
+          parameters: { 'filename*0': 'foo.', 'filename*1': 'html' },
+        },
+      );
+    });
+  });
+
   describe('from TC 2231', function () {
     describe('Disposition-Type Inline', function () {
       it('should parse "inline"', function () {
@@ -1012,7 +1078,7 @@ describe('parse(string)', function () {
           parse('attachment; filename*0="foo."; filename*1="html"'),
           {
             type: 'attachment',
-            parameters: { 'filename*0': 'foo.', 'filename*1': 'html' },
+            parameters: { filename: 'foo.html' },
           },
         );
       });
@@ -1022,7 +1088,7 @@ describe('parse(string)', function () {
           parse('attachment; filename*0="foo"; filename*1="\\b\\a\\r.html"'),
           {
             type: 'attachment',
-            parameters: { 'filename*0': 'foo', 'filename*1': 'bar.html' },
+            parameters: { filename: 'foobar.html' },
           },
         );
       });
@@ -1034,11 +1100,7 @@ describe('parse(string)', function () {
           ),
           {
             type: 'attachment',
-            parameters: {
-              'filename*0': 'foo-ä',
-              'filename*0*': "UTF-8''foo-%c3%a4",
-              'filename*1': '.html',
-            },
+            parameters: { filename: 'foo-ä.html' },
           },
         );
       });
@@ -1078,7 +1140,7 @@ describe('parse(string)', function () {
           parse('attachment; filename*1="bar"; filename*0="foo"'),
           {
             type: 'attachment',
-            parameters: { 'filename*1': 'bar', 'filename*0': 'foo' },
+            parameters: { filename: 'foobar' },
           },
         );
       });

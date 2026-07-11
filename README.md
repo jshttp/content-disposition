@@ -82,6 +82,9 @@ parameter name. This will return an object with the following properties:
   always lower case and extended versions replace non-extended versions). Example:
   `{filename: "€ rates.txt"}`
 
+RFC 2231 parameter continuations, such as `filename*0` and `filename*1`, are
+assembled into the base parameter when all continuation parts are present.
+
 #### Options
 
 ##### multipart
