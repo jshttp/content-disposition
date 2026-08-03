@@ -488,20 +488,19 @@ function decodeHexEscapes(str: string): string | undefined {
   let result = str.slice(0, firstEscape);
   for (let idx = firstEscape; idx < str.length; idx++) {
     if (str[idx] === '%') {
+      // Reject malformed percent encoding, matches UTF-8 behavior.
       if (
-        idx + 2 < str.length &&
-        isHexDigit(str[idx + 1]) &&
-        isHexDigit(str[idx + 2])
+        idx + 2 >= str.length ||
+        !isHexDigit(str[idx + 2]) ||
+        !isHexDigit(str[idx + 1])
       ) {
-        result += String.fromCharCode(
-          Number.parseInt(str[idx + 1] + str[idx + 2], 16),
-        );
-        idx += 2;
-      } else {
-        // malformed percent-encoding: reject per RFC 8187 3.2.1, matching the
-        // UTF-8 path, so the unprocessable ext-value is ignored
-        return undefined;
+        return;
       }
+
+      result += String.fromCharCode(
+        Number.parseInt(str[idx + 1] + str[idx + 2], 16),
+      );
+      idx += 2;
     } else {
       result += str[idx];
     }
