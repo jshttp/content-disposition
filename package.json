@@ -15,7 +15,7 @@
   },
   "license": "MIT",
   "author": "Douglas Christopher Wilson <doug@somethingdoug.com>",
-  "type": "commonjs",
+  "type": "module",
   "exports": "./dist/index.js",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -39,7 +39,7 @@
     "vitest": "^3.2.4"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "ts-scripts": {
     "dist": [

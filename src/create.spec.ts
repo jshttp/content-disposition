@@ -1,5 +1,5 @@
 import { describe, it, assert } from 'vitest';
-import { create } from './index';
+import { create } from './index.js';
 
 describe('create()', function () {
   it('should create an attachment header', function () {

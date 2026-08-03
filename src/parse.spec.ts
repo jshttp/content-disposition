@@ -1,5 +1,5 @@
 import { describe, it, assert } from 'vitest';
-import { parse, format } from './index';
+import { parse, format } from './index.js';
 
 describe('parse(string)', function () {
   describe('with only type', function () {
