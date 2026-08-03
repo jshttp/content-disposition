@@ -481,18 +481,22 @@ function isHexDigit(char: string): boolean {
 /**
  * Decode hex escapes in a string (e.g., %20 -> space)
  */
-function decodeHexEscapes(str: string): string {
+function decodeHexEscapes(str: string): string | undefined {
   const firstEscape = str.indexOf('%');
   if (firstEscape === -1) return str;
 
   let result = str.slice(0, firstEscape);
   for (let idx = firstEscape; idx < str.length; idx++) {
-    if (
-      str[idx] === '%' &&
-      idx + 2 < str.length &&
-      isHexDigit(str[idx + 1]) &&
-      isHexDigit(str[idx + 2])
-    ) {
+    if (str[idx] === '%') {
+      // Reject malformed percent encoding, matches UTF-8 behavior.
+      if (
+        idx + 2 >= str.length ||
+        !isHexDigit(str[idx + 2]) ||
+        !isHexDigit(str[idx + 1])
+      ) {
+        return;
+      }
+
       result += String.fromCharCode(
         Number.parseInt(str[idx + 1] + str[idx + 2], 16),
       );

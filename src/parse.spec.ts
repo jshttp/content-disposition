@@ -253,6 +253,33 @@ describe('parse(string)', function () {
       });
     });
 
+    it('should ignore invalid percent-encodings in ISO-8859-1 extended parameter value', function () {
+      assert.deepEqual(
+        parse("attachment; filename*=ISO-8859-1''%A3%2rates.pdf"),
+        {
+          type: 'attachment',
+          parameters: {
+            'filename*': "ISO-8859-1''%A3%2rates.pdf",
+          },
+        },
+      );
+    });
+
+    it('should fall back to filename when ISO-8859-1 filename* is malformed', function () {
+      assert.deepEqual(
+        parse(
+          'attachment; filename="invoice.pdf"; filename*=ISO-8859-1\'\'report%2',
+        ),
+        {
+          type: 'attachment',
+          parameters: {
+            filename: 'invoice.pdf',
+            'filename*': "ISO-8859-1''report%2",
+          },
+        },
+      );
+    });
+
     it('should not be case-sensitive for charset', function () {
       assert.deepEqual(
         parse("attachment; filename*=utf-8''%E2%82%AC%20rates.pdf"),
