@@ -14,13 +14,13 @@ jobs:
           - 22
           - latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm install
       - run: npm test
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v7
         with:
           name: Node.js ${{ matrix.node-version }}
           token: ${{ secrets.CODECOV_TOKEN }}
