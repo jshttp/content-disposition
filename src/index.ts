@@ -407,7 +407,18 @@ export function format(
         throw new TypeError('Invalid parameter value: ' + value);
       }
 
-      result += '; ' + param + '*=' + encodeExtended(value);
+      // The extended form of `param` is `param*`, and a name already ending in
+      // `*` is that form. Skip when the object holds the extended name itself
+      // (e.g. every object returned by `parse`), as it is written out from its
+      // own entry and a header must not repeat a parameter name.
+      const extendedParam =
+        param.charCodeAt(param.length - 1) === ASTERISK ? param : param + '*';
+
+      if (extendedParam !== param && parameters[extendedParam] !== undefined) {
+        continue;
+      }
+
+      result += '; ' + extendedParam + '=' + encodeExtended(value);
     }
   }
 

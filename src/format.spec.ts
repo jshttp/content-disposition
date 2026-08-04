@@ -1,5 +1,5 @@
 import { assert, describe, it } from 'vitest';
-import { format } from './index';
+import { format, parse } from './index';
 
 describe('format(obj)', function () {
   it('should format a header with only type', function () {
@@ -63,6 +63,53 @@ describe('format(obj)', function () {
         parameters: { filename: '€ rates.pdf' },
       }),
       "attachment; filename*=UTF-8''%E2%82%AC%20rates.pdf",
+    );
+  });
+
+  it('should not repeat an extended parameter that is already present', function () {
+    assert.strictEqual(
+      format({
+        type: 'attachment',
+        parameters: {
+          filename: '€ rates.pdf',
+          'filename*': "UTF-8''%E2%82%AC%20rates.pdf",
+        },
+      }),
+      "attachment; filename*=UTF-8''%E2%82%AC%20rates.pdf",
+    );
+  });
+
+  it('should not repeat an extended parameter listed before its value', function () {
+    assert.strictEqual(
+      format({
+        type: 'attachment',
+        parameters: {
+          'filename*': "UTF-8''%E2%82%AC%20rates.pdf",
+          filename: '€ rates.pdf',
+        },
+      }),
+      "attachment; filename*=UTF-8''%E2%82%AC%20rates.pdf",
+    );
+  });
+
+  it('should format the result of parse without repeating a parameter', function () {
+    assert.strictEqual(
+      format(
+        parse(
+          'attachment; filename="EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf',
+        ),
+      ),
+      "attachment; filename*=UTF-8''%E2%82%AC%20rates.pdf",
+    );
+  });
+
+  it('should not add a second asterisk to an extended parameter name', function () {
+    assert.strictEqual(
+      format({
+        type: 'attachment',
+        parameters: { 'filename*': "UTF-8''€ rates.pdf" },
+      }),
+      "attachment; filename*=UTF-8''UTF-8%27%27%E2%82%AC%20rates.pdf",
     );
   });
 
