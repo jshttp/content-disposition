@@ -103,13 +103,74 @@ describe('format(obj)', function () {
     );
   });
 
-  it('should not add a second asterisk to an extended parameter name', function () {
+  it('should format an extended parameter that is already encoded', function () {
     assert.strictEqual(
       format({
         type: 'attachment',
-        parameters: { 'filename*': "UTF-8''€ rates.pdf" },
+        parameters: { 'filename*': "UTF-8''%E2%82%AC%20rates.pdf" },
       }),
-      "attachment; filename*=UTF-8''UTF-8%27%27%E2%82%AC%20rates.pdf",
+      "attachment; filename*=UTF-8''%E2%82%AC%20rates.pdf",
+    );
+    assert.strictEqual(
+      format({
+        type: 'attachment',
+        parameters: { 'filename*': "iso-8859-1'en'%A3%20rates.pdf" },
+      }),
+      "attachment; filename*=iso-8859-1'en'%A3%20rates.pdf",
+    );
+  });
+
+  it('should reject an extended parameter that needs encoding', function () {
+    // Neither alternative keeps the value: `filename**` names a different
+    // parameter, so the next parse drops the filename, and encoding in place
+    // nests a second charset inside the value.
+    assert.throws(
+      () =>
+        format({
+          type: 'attachment',
+          parameters: { 'filename*': "UTF-8''€ rates.pdf" },
+        }),
+      /Invalid extended parameter value/,
+    );
+    assert.throws(
+      () =>
+        format({
+          type: 'attachment',
+          parameters: { 'filename*': '€ rates.pdf' },
+        }),
+      /Invalid extended parameter value/,
+    );
+  });
+
+  // `parse` is lenient about an ext-value it cannot decode and passes the raw
+  // text through, so refusing to write those back would break format(parse(x)).
+  it('should pass through an extended parameter it cannot decode', function () {
+    assert.strictEqual(
+      format({
+        type: 'attachment',
+        parameters: { 'filename*': 'rates.pdf' },
+      }),
+      'attachment; filename*=rates.pdf',
+    );
+    assert.strictEqual(
+      format({
+        type: 'attachment',
+        parameters: { 'filename*': "shift_jis''%83%65.pdf" },
+      }),
+      "attachment; filename*=shift_jis''%83%65.pdf",
+    );
+  });
+
+  it('should treat a trailing asterisk as an ordinary character in multipart', function () {
+    assert.strictEqual(
+      format(
+        {
+          type: 'form-data',
+          parameters: { 'filename*': '€ rates.pdf' },
+        },
+        { multipart: true },
+      ),
+      'form-data; filename*="€ rates.pdf"',
     );
   });
 

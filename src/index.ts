@@ -389,6 +389,8 @@ export function format(
       }
 
       if (multipart) {
+        // `multipart/form-data` as browsers send it has no extended encoding, so
+        // a trailing `*` is an ordinary character in a name here.
         result += '; ' + param + '=' + qmultipart(value);
         continue;
       }
@@ -407,18 +409,25 @@ export function format(
         throw new TypeError('Invalid parameter value: ' + value);
       }
 
-      // The extended form of `param` is `param*`, and a name already ending in
-      // `*` is that form. Skip when the object holds the extended name itself
-      // (e.g. every object returned by `parse`), as it is written out from its
-      // own entry and a header must not repeat a parameter name.
-      const extendedParam =
-        param.charCodeAt(param.length - 1) === ASTERISK ? param : param + '*';
+      // Reaching here with a name already ending in `*` means the caller asked
+      // for the extended form of a name that is itself the extended form, over a
+      // value that is not an ext-value. There is no correct output: `param**`
+      // names a different parameter, and encoding in place nests a second
+      // charset inside the value. Both lose the value on the next parse, so
+      // reject it rather than emit a header that silently drops it.
+      if (param.charCodeAt(param.length - 1) === ASTERISK) {
+        throw new TypeError('Invalid extended parameter value: ' + value);
+      }
 
-      if (extendedParam !== param && parameters[extendedParam] !== undefined) {
+      // `parse` returns both the raw `param*` and its decoded `param`, so writing
+      // this one out as `param*` too would repeat a parameter name. The extended
+      // entry is authoritative — it keeps the charset and any language tag — so
+      // defer to it when the object carries one.
+      if (parameters[param + '*'] !== undefined) {
         continue;
       }
 
-      result += '; ' + extendedParam + '=' + encodeExtended(value);
+      result += '; ' + param + '*=' + encodeExtended(value);
     }
   }
 
