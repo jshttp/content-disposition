@@ -407,6 +407,16 @@ export function format(
         throw new TypeError('Invalid parameter value: ' + value);
       }
 
+      // Reject parameter names that indicate they are already extended.
+      if (param.charCodeAt(param.length - 1) === ASTERISK) {
+        throw new TypeError('Invalid extended parameter value: ' + value);
+      }
+
+      // When `param` and `param*` are provided, prefer the already extended form.
+      if (parameters[param + '*'] !== undefined) {
+        continue;
+      }
+
       result += '; ' + param + '*=' + encodeExtended(value);
     }
   }
