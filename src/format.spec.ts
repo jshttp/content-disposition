@@ -1,5 +1,5 @@
 import { assert, describe, it } from 'vitest';
-import { format, parse } from './index';
+import { format, parse } from './index.js';
 
 describe('format(obj)', function () {
   it('should format a header with only type', function () {
