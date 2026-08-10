@@ -142,17 +142,17 @@ e.g. `filename*=`, defaults to `true`.
 ### Send a file for download
 
 ```js
-const contentDisposition = require('content-disposition');
-const fs = require('fs');
-const http = require('http');
-const onFinished = require('on-finished');
+import fs from 'node:fs';
+import http from 'node:http';
+import { create } from 'content-disposition';
+import onFinished from 'on-finished';
 
 const filePath = '/path/to/public/plans.pdf';
 
 http.createServer(function onRequest(req, res) {
   // set headers
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', contentDisposition(filePath));
+  res.setHeader('Content-Disposition', create(filePath));
 
   // send file
   const stream = fs.createReadStream(filePath);

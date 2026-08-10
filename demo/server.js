@@ -1,14 +1,11 @@
-'use strict';
+import fs from 'node:fs';
+import http from 'node:http';
 
-const fs = require('node:fs');
-const http = require('node:http');
-const path = require('node:path');
-
-const { create, parse } = require('../dist/index.js');
+import { create, parse } from '../dist/index.js';
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || '127.0.0.1';
-const indexPath = path.join(__dirname, 'index.html');
+const indexPath = new URL('./index.html', import.meta.url);
 
 const server = http.createServer(async (req, res) => {
   try {
