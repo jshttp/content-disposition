@@ -33,7 +33,8 @@ var ENCODE_URL_ATTR_CHAR_REGEXP = /[\x00-\x20"'()*,/:;<=>?@[\\\]{}\x7f]/g // esl
  * @private
  */
 
-var NON_LATIN1_REGEXP = /[^\x20-\x7e\xa0-\xff]/g
+var NON_LATIN1_REGEXP = /[^\x20-\x7e\xa0-\xff]/
+var NON_LATIN1_REPLACE_REGEXP = /[^\x20-\x7e\xa0-\xff]/g
 
 /**
  * RegExp to match quoted-pair in RFC 2616
@@ -301,7 +302,7 @@ function decodefield (str) {
 
 function getlatin1 (val) {
   // simple Unicode -> ISO-8859-1 transformation
-  return String(val).replace(NON_LATIN1_REGEXP, '?')
+  return String(val).replace(NON_LATIN1_REPLACE_REGEXP, '?')
 }
 
 /**

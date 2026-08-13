@@ -230,6 +230,19 @@ describe('contentDisposition(filename, options)', function () {
         'inline')
     })
   })
+
+  describe('regex state bug', function () {
+    it('should still throw on second call with non-ISO-8859-1 fallback', function () {
+      assert.throws(
+        contentDisposition.bind(null, 'file.pdf', { fallback: '€ rates.pdf' }),
+        /fallback.*iso-8859-1/i
+      )
+      assert.throws(
+        contentDisposition.bind(null, 'file.pdf', { fallback: '€' }),
+        /fallback.*iso-8859-1/i
+      )
+    })
+  })
 })
 
 describe('contentDisposition.parse(string)', function () {
