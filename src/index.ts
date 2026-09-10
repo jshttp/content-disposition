@@ -55,6 +55,48 @@ const DQUOTE = 34; // '"'
 const BSLASH = 92; // "\\"
 const ASTERISK = 42; // "*"
 
+const LOWER_CASE = 1;
+const OWS = 2;
+const SEMI_FLAG = 4;
+const TOKEN_FLAG = 8;
+const NON_ASCII = 0xff00;
+const CASE_FLAGS = LOWER_CASE | NON_ASCII;
+
+/**
+ * Character flags used to normalize the header while scanning.
+ * Out-of-range reads intentionally coerce to zero in bitwise expressions.
+ */
+const CHAR_MAP = new Uint8Array(0x100);
+
+for (let code = 0x41 /* A */; code <= 0x5a /* Z */; code++) {
+  CHAR_MAP[code] |= LOWER_CASE | TOKEN_FLAG;
+}
+
+CHAR_MAP[HTAB] |= OWS;
+CHAR_MAP[SP] |= OWS;
+CHAR_MAP[SEMI] |= SEMI_FLAG;
+for (let code = 0x80 /* non-ASCII */; code <= 0xff; code++) {
+  CHAR_MAP[code] |= LOWER_CASE;
+}
+
+for (const char of "!#$%&'*+-.^_`|~0123456789abcdefghijklmnopqrstuvwxyz") {
+  CHAR_MAP[char.charCodeAt(0)] |= TOKEN_FLAG;
+}
+
+/**
+ * Validate a non-empty HTTP token.
+ */
+function isTokenValid(str: string): boolean {
+  const len = str.length;
+  if (len === 0) return false;
+
+  for (let index = 0; index < len; index++) {
+    if ((CHAR_MAP[str.charCodeAt(index)] & TOKEN_FLAG) === 0) return false;
+  }
+
+  return true;
+}
+
 export interface ParseOptions {
   /**
    * Whether to decode RFC 8187 encoded parameters.
@@ -78,95 +120,119 @@ export function parse(
   const len = header.length;
   const multipart = options?.multipart === true;
   const extended = options?.extended !== false;
-  let index = skipOWS(header, 0, header.length);
+  let index = 0;
+
+  while ((CHAR_MAP[header.charCodeAt(index)] & OWS) !== 0) {
+    index++;
+  }
 
   const typeStart = index;
-  index = parseToken(header, index, len);
-  const typeEnd = trailingOWS(header, typeStart, index);
-  const type = header.slice(typeStart, typeEnd).toLowerCase();
+  let typeFlags = 0;
+  let whitespace = -1;
 
+  while (index < len) {
+    const code = header.charCodeAt(index);
+    const flags = CHAR_MAP[code];
+    if ((flags & SEMI_FLAG) !== 0) break;
+
+    if ((flags & OWS) !== 0) {
+      if (whitespace === -1) whitespace = index;
+    } else {
+      whitespace = -1;
+    }
+
+    typeFlags |= (code & NON_ASCII) | flags;
+    index++;
+  }
+
+  const typeEnd = whitespace === -1 ? index : whitespace;
+  const typeValue = header.slice(typeStart, typeEnd);
+  const type =
+    (typeFlags & CASE_FLAGS) === 0 ? typeValue : typeValue.toLowerCase();
   const parameters: Record<string, string> = new NullObject();
 
   parameter: while (index < len) {
-    index = skipOWS(header, index + 1, len); // Skip over semicolon.
+    index++; // Skip over semicolon.
+    while ((CHAR_MAP[header.charCodeAt(index)] & OWS) !== 0) {
+      index++;
+    }
 
     const keyStart = index;
+    let keyFlags = 0;
+    let keyWhitespace = -1;
 
     while (index < len) {
-      const char = header.charCodeAt(index);
-      if (char === SEMI) continue parameter;
+      const code = header.charCodeAt(index);
+      const flags = CHAR_MAP[code];
+      if ((flags & SEMI_FLAG) !== 0) continue parameter;
 
-      if (char === EQ) {
-        const keyEnd = trailingOWS(header, keyStart, index);
-        const key = header.slice(keyStart, keyEnd).toLowerCase();
+      if (code === EQ) {
+        const keyEnd = keyWhitespace === -1 ? index : keyWhitespace;
+        const keyValue = header.slice(keyStart, keyEnd);
+        const key =
+          (keyFlags & CASE_FLAGS) === 0 ? keyValue : keyValue.toLowerCase();
 
-        index = skipOWS(header, index + 1, len);
+        index++;
+        while ((CHAR_MAP[header.charCodeAt(index)] & OWS) !== 0) {
+          index++;
+        }
 
         if (index < len && header.charCodeAt(index) === DQUOTE) {
-          index++;
+          const quotedStart = ++index;
+          let encoded = false;
 
-          let value = '';
-
-          if (multipart) {
-            while (index < len) {
-              const code = header.charCodeAt(index++);
-              if (code === DQUOTE) {
-                index = parseToken(header, index, len);
-                if (parameters[key] === undefined) parameters[key] = value;
-                break;
+          while (index < len) {
+            const code = header.charCodeAt(index);
+            if (code === DQUOTE) {
+              if (parameters[key] === undefined) {
+                parameters[key] = encoded
+                  ? multipart
+                    ? decodeMultipartEscapes(header, quotedStart, index)
+                    : unescapeQuotedPairs(header, quotedStart, index)
+                  : header.slice(quotedStart, index);
               }
 
-              if (code === /* % */ 37 && index + 1 < len) {
-                const code2 = header.charCodeAt(index);
-                const code3 = header.charCodeAt(index + 1);
+              index++;
+              while (index < len) {
+                if ((CHAR_MAP[header.charCodeAt(index)] & SEMI_FLAG) !== 0) {
+                  break;
+                }
+                index++;
+              }
+              continue parameter;
+            }
 
-                if (code2 === 50 /* "2" */ && code3 === 50 /* "2" */) {
-                  value += '"';
-                  index += 2;
+            if (multipart) {
+              if (code === /* % */ 37) {
+                const decodedCode = multipartEscapeCode(header, index, len);
+                if (decodedCode !== 0) {
+                  encoded = true;
+                  index += 3;
                   continue;
                 }
-
-                if (code2 === 48 /* "0" */) {
-                  if (code3 === 100 /* "d" */ || code3 === 68 /* "D" */) {
-                    value += '\r';
-                    index += 2;
-                    continue;
-                  }
-
-                  if (code3 === 97 /* "a" */ || code3 === 65 /* "A" */) {
-                    value += '\n';
-                    index += 2;
-                    continue;
-                  }
-                }
               }
-
-              value += String.fromCharCode(code);
+            } else if (code === BSLASH && index + 1 < len) {
+              encoded = true;
+              index += 2;
+              continue;
             }
-          } else {
-            while (index < len) {
-              const code = header.charCodeAt(index++);
-              if (code === DQUOTE) {
-                index = parseToken(header, index, len);
-                if (parameters[key] === undefined) parameters[key] = value;
-                break;
-              }
 
-              if (code === BSLASH && index < len) {
-                value += header[index++];
-                continue;
-              }
-
-              value += String.fromCharCode(code);
-            }
+            index++;
           }
 
           continue parameter;
         }
 
         const valueStart = index;
-        index = parseToken(header, index, len);
-        const valueEnd = trailingOWS(header, valueStart, index);
+        const delimiter = header.indexOf(';', index);
+        index = delimiter === -1 ? len : delimiter;
+        let valueEnd = index;
+        while (
+          valueEnd > valueStart &&
+          (CHAR_MAP[header.charCodeAt(valueEnd - 1)] & OWS) !== 0
+        ) {
+          valueEnd--;
+        }
         const value = header.slice(valueStart, valueEnd);
 
         if (parameters[key] === undefined) {
@@ -182,11 +248,75 @@ export function parse(
         continue parameter;
       }
 
+      if ((flags & OWS) !== 0) {
+        if (keyWhitespace === -1) keyWhitespace = index;
+      } else {
+        keyWhitespace = -1;
+      }
+
+      keyFlags |= (code & NON_ASCII) | flags;
       index++;
     }
   }
 
   return { type, parameters };
+}
+
+/**
+ * Return the decoded character code for a multipart escape, or zero if invalid.
+ */
+function multipartEscapeCode(str: string, index: number, len: number): number {
+  if (index + 2 >= len) return 0;
+
+  const code2 = str.charCodeAt(index + 1);
+  const code3 = str.charCodeAt(index + 2);
+  if (code2 === 50 /* "2" */ && code3 === 50 /* "2" */) return DQUOTE;
+  if (code2 !== 48 /* "0" */) return 0;
+
+  if (code3 === 100 /* "d" */ || code3 === 68 /* "D" */) return 13;
+  if (code3 === 97 /* "a" */ || code3 === 65 /* "A" */) return 10;
+  return 0;
+}
+
+/**
+ * Remove backslashes from quoted pairs in a known-terminated quoted string.
+ */
+function unescapeQuotedPairs(str: string, start: number, end: number): string {
+  let result = '';
+
+  for (let index = start; index < end; index++) {
+    if (str.charCodeAt(index) === BSLASH) {
+      result += str.slice(start, index);
+      start = ++index;
+    }
+  }
+
+  return result + str.slice(start, end);
+}
+
+/**
+ * Decode the escapes browsers apply to multipart quoted parameter values.
+ */
+function decodeMultipartEscapes(
+  str: string,
+  start: number,
+  end: number,
+): string {
+  let result = '';
+
+  for (let index = start; index < end; index++) {
+    if (str.charCodeAt(index) !== /* % */ 37) continue;
+
+    const decodedCode = multipartEscapeCode(str, index, end);
+    if (decodedCode === 0) continue;
+
+    result += str.slice(start, index);
+    result += String.fromCharCode(decodedCode);
+    index += 2;
+    start = index + 1;
+  }
+
+  return result + str.slice(start, end);
 }
 
 /**
@@ -198,11 +328,6 @@ const ENCODE_URL_ATTR_CHAR_REGEXP = /[\x00-\x20"'()*,/:;<=>?@[\\\]{}\x7f]/g; // 
  * RegExp to match non-US-ASCII characters.
  */
 const NON_ASCII_REGEXP = /[^\x20-\x7e]/g;
-
-/**
- * RegExp to match chars that must be quoted-pair in RFC 2616
- */
-const QUOTE_REGEXP = /[\\"]/g;
 
 /**
  * Match chars that can't be used in the filename for compatibility.
@@ -232,9 +357,7 @@ const INVALID_FILENAME_REGEXP = /%[0-9A-Fa-f]{2}/;
  * CTL           = <any US-ASCII control character (octets 0 - 31) and DEL (127)>
  * OCTET         = <any 8-bit sequence of data>
  */
-const TEXT_REGEXP = /^[\x20-\x7e\x80-\xff]*$/;
 const ASCII_TEXT_REGEXP = /^[\x20-\x7e]*$/;
-const TOKEN_REGEXP = /^[!#$%&'*+.0-9A-Z^_`a-z|~-]+$/;
 
 /**
  * Create parameters object from filename and fallback.
@@ -313,42 +436,6 @@ function tryDecodeURIComponent(str: string): string | undefined {
   }
 }
 
-/**
- * Parse a token starting at the provided index.
- */
-function parseToken(str: string, index: number, len: number): number {
-  while (index < len) {
-    const char = str.charCodeAt(index);
-    if (char === SEMI) break;
-    index++;
-  }
-  return index;
-}
-
-/**
- * Skip RFC 2616 linear whitespace (space / tab).
- */
-function skipOWS(str: string, index: number, len: number): number {
-  while (index < len) {
-    const char = str.charCodeAt(index);
-    if (char !== SP && char !== HTAB) break;
-    index++;
-  }
-  return index;
-}
-
-/**
- * Skip RFC 2616 linear whitespace (space / tab) from the end of a string.
- */
-function trailingOWS(str: string, start: number, end: number): number {
-  while (end > start) {
-    const char = str.charCodeAt(end - 1);
-    if (char !== SP && char !== HTAB) break;
-    end--;
-  }
-  return end;
-}
-
 export interface FormatOptions {
   /**
    * Whether to use extended parameter encoding for non-ISO-8859-1 strings.
@@ -374,7 +461,7 @@ export function format(
   const multipart = options?.multipart === true;
   const extended = options?.extended !== false;
 
-  if (!type || !TOKEN_REGEXP.test(type)) {
+  if (!type || !isTokenValid(type)) {
     throw new TypeError('Invalid type: ' + type);
   }
 
@@ -384,7 +471,7 @@ export function format(
     for (const param of Object.keys(parameters)) {
       const value = parameters[param];
 
-      if (!TOKEN_REGEXP.test(param)) {
+      if (!isTokenValid(param)) {
         throw new TypeError('Invalid parameter name: ' + param);
       }
 
@@ -393,13 +480,9 @@ export function format(
         continue;
       }
 
-      if (TOKEN_REGEXP.test(value)) {
-        result += '; ' + param + '=' + value;
-        continue;
-      }
-
-      if (TEXT_REGEXP.test(value)) {
-        result += '; ' + param + '=' + qstring(value);
+      const formatted = parameterValue(value);
+      if (formatted !== undefined) {
+        result += '; ' + param + '=' + formatted;
         continue;
       }
 
@@ -440,10 +523,28 @@ function pencode(char: string): string {
 }
 
 /**
- * Quote a string for HTTP.
+ * Serialize a token or quoted value, or return undefined if encoding is needed.
  */
-function qstring(str: string): string {
-  return '"' + str.replace(QUOTE_REGEXP, '\\$&') + '"';
+function parameterValue(str: string): string | undefined {
+  const len = str.length;
+  if (len === 0) return '""';
+  let index = 0;
+  while (index < len && (CHAR_MAP[str.charCodeAt(index)] & TOKEN_FLAG) !== 0) {
+    index++;
+  }
+  if (index === len) return str;
+
+  let result = '"';
+  let start = 0;
+  for (; index < len; index++) {
+    const code = str.charCodeAt(index);
+    if (code < SP || code === 127 || code > 255) return undefined;
+    if (code === DQUOTE || code === BSLASH) {
+      result += str.slice(start, index) + '\\';
+      start = index;
+    }
+  }
+  return result + str.slice(start) + '"';
 }
 
 /**
@@ -452,16 +553,19 @@ function qstring(str: string): string {
  * @see https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#multipart-form-data
  */
 function qmultipart(str: string): string {
-  return '"' + str.replace(/[\n\r"]/g, multipartEscape) + '"';
-}
-
-/**
- * Escape a multipart/form-data string character.
- */
-function multipartEscape(char: string): string {
-  if (char === '\n') return '%0A';
-  if (char === '\r') return '%0D';
-  return '%22';
+  // Skip the character loop when no escaping is needed.
+  if (!/[\n\r"]/.test(str)) return '"' + str + '"';
+  let result = '"';
+  let start = 0;
+  for (let index = 0; index < str.length; index++) {
+    const code = str.charCodeAt(index);
+    if (code === DQUOTE || code === 10 || code === 13) {
+      result += str.slice(start, index);
+      result += code === DQUOTE ? '%22' : code === 10 ? '%0A' : '%0D';
+      start = index + 1;
+    }
+  }
+  return result + str.slice(start) + '"';
 }
 
 /**
@@ -477,43 +581,33 @@ export function encodeExtended(str: string): string {
 }
 
 /**
- * Check if a character is a hex digit [0-9A-Fa-f]
+ * Hex digit values plus one; zero denotes an invalid digit.
  */
-function isHexDigit(char: string): boolean {
-  const code = char.charCodeAt(0);
-  return (
-    (code >= 48 && code <= 57) || // 0-9
-    (code >= 65 && code <= 70) || // A-F
-    (code >= 97 && code <= 102) // a-f
-  );
-}
+const HEX_VALUES = new Uint8Array(128);
+for (let code = 48; code <= 57; code++) HEX_VALUES[code] = code - 47;
+for (let code = 65; code <= 70; code++) HEX_VALUES[code] = code - 54;
+for (let code = 97; code <= 102; code++) HEX_VALUES[code] = code - 86;
 
 /**
- * Decode hex escapes in a string (e.g., %20 -> space)
+ * Decode hex escapes in a string (e.g., %20 -> space).
  */
 function decodeHexEscapes(str: string): string | undefined {
-  const firstEscape = str.indexOf('%');
-  if (firstEscape === -1) return str;
+  let index = str.indexOf('%');
+  if (index === -1) return str;
 
-  let result = str.slice(0, firstEscape);
-  for (let idx = firstEscape; idx < str.length; idx++) {
-    if (str[idx] === '%') {
-      // Reject malformed percent encoding, matches UTF-8 behavior.
-      if (
-        idx + 2 >= str.length ||
-        !isHexDigit(str[idx + 2]) ||
-        !isHexDigit(str[idx + 1])
-      ) {
-        return;
-      }
+  let start = 0;
+  let result = '';
+  do {
+    const high = HEX_VALUES[str.charCodeAt(index + 1)];
+    const low = HEX_VALUES[str.charCodeAt(index + 2)];
+    if (!high || !low) return undefined;
 
-      result += String.fromCharCode(
-        Number.parseInt(str[idx + 1] + str[idx + 2], 16),
-      );
-      idx += 2;
-    } else {
-      result += str[idx];
-    }
-  }
-  return result;
+    result +=
+      str.slice(start, index) +
+      String.fromCharCode(((high - 1) << 4) | (low - 1));
+    start = index + 3;
+    index = str.indexOf('%', start);
+  } while (index !== -1);
+
+  return result + str.slice(start);
 }
