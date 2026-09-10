@@ -3,6 +3,13 @@ import { parse, format } from './index.js';
 
 describe('parse(string)', function () {
   describe('with only type', function () {
+    it('should ignore leading spaces and tabs', function () {
+      assert.deepEqual(parse(' \t attachment'), {
+        type: 'attachment',
+        parameters: {},
+      });
+    });
+
     it('should parse quoted value leniently', function () {
       assert.deepEqual(parse('"attachment"'), {
         type: '"attachment"',
@@ -51,9 +58,23 @@ describe('parse(string)', function () {
         parameters: {},
       });
     });
+
+    it('should normalize non-ASCII characters to lower-case', function () {
+      assert.deepEqual(parse('ATTÄCHMENT'), {
+        type: 'attächment',
+        parameters: {},
+      });
+    });
   });
 
   describe('with parameters', function () {
+    it('should preserve whitespace within parameter names', function () {
+      assert.deepEqual(parse('attachment; file \t name =plans.pdf'), {
+        type: 'attachment',
+        parameters: { 'file \t name': 'plans.pdf' },
+      });
+    });
+
     it('should ignore trailing semicolon', function () {
       assert.deepEqual(parse('attachment; filename="rates.pdf";'), {
         type: 'attachment',
@@ -111,6 +132,13 @@ describe('parse(string)', function () {
       assert.deepEqual(parse('attachment; FILENAME="plans.pdf"'), {
         type: 'attachment',
         parameters: { filename: 'plans.pdf' },
+      });
+    });
+
+    it('should lower-case non-ASCII parameter names', function () {
+      assert.deepEqual(parse('attachment; FÖÖ=bar'), {
+        type: 'attachment',
+        parameters: { föö: 'bar' },
       });
     });
 
@@ -584,6 +612,13 @@ describe('parse(string)', function () {
 
       it('should preserve spaces in token values', function () {
         assert.deepEqual(parse('attachment; filename=foo bar.html'), {
+          type: 'attachment',
+          parameters: { filename: 'foo bar.html' },
+        });
+      });
+
+      it('should trim trailing whitespace after spaces in token values', function () {
+        assert.deepEqual(parse('attachment; filename=foo bar.html \t'), {
           type: 'attachment',
           parameters: { filename: 'foo bar.html' },
         });
@@ -1192,6 +1227,29 @@ describe('parse(string)', function () {
 
 describe('parse(string, options)', function () {
   describe('with "multipart" option', function () {
+    it('should ignore unterminated values ending in percent escapes', function () {
+      for (const suffix of ['%', '%0']) {
+        assert.deepEqual(
+          parse('form-data; name="upload"; filename="plans' + suffix, {
+            multipart: true,
+          }),
+          { type: 'form-data', parameters: { name: 'upload' } },
+        );
+      }
+    });
+
+    it('should preserve invalid escapes alongside decoded escapes', function () {
+      assert.deepEqual(
+        parse('form-data; filename="%22plans%00%20%2%"', {
+          multipart: true,
+        }),
+        {
+          type: 'form-data',
+          parameters: { filename: '"plans%00%20%2%' },
+        },
+      );
+    });
+
     it('should parse browser multipart field names and filenames', function () {
       assert.deepEqual(
         parse('form-data; name="upload"; filename="the %22plans%22.pdf"', {

@@ -2,6 +2,14 @@ import { assert, describe, it } from 'vitest';
 import { format, parse } from './index.js';
 
 describe('format(obj)', function () {
+  it('should reject an empty parameter name', function () {
+    assert.throws(
+      () => format({ type: 'attachment', parameters: { '': 'plans.pdf' } }),
+      TypeError,
+      'Invalid parameter name: ',
+    );
+  });
+
   it('should format a header with only type', function () {
     assert.strictEqual(format({ type: 'attachment' }), 'attachment');
   });
@@ -299,4 +307,61 @@ describe('format(obj, options)', function () {
       );
     });
   });
+});
+
+it('should preserve formatting rules for every byte and Unicode boundaries', () => {
+  const token = /^[!#$%&'*+.0-9A-Z^_`a-z|~-]+$/;
+  for (const code of [...Array(256).keys(), 256, 0x20ac, 0xffff]) {
+    const char = String.fromCharCode(code);
+    for (const value of [
+      char,
+      'prefix' + char + 'suffix',
+      '"\\' + char,
+      'a'.repeat(65) + char,
+    ]) {
+      const obj = { type: 'attachment', parameters: { filename: value } };
+      const plain = [...value].every((c) => {
+        const n = c.charCodeAt(0);
+        return n >= 32 && n !== 127 && n <= 255;
+      });
+      const expected = token.test(value)
+        ? value
+        : '"' + value.replace(/[\\"]/g, '\\$&') + '"';
+      if (plain) {
+        assert.strictEqual(format(obj), 'attachment; filename=' + expected);
+        assert.strictEqual(
+          format(obj, { extended: false }),
+          'attachment; filename=' + expected,
+        );
+      } else {
+        assert.throws(
+          () => format(obj, { extended: false }),
+          /Invalid parameter value/,
+        );
+        assert.match(format(obj), /^attachment; filename\*=UTF-8''/);
+      }
+      assert.strictEqual(
+        format(obj, { multipart: true }),
+        'attachment; filename="' +
+          value.replace(/[\n\r"]/g, (c) =>
+            c === '\n' ? '%0A' : c === '\r' ? '%0D' : '%22',
+          ) +
+          '"',
+      );
+    }
+    const name = 'x' + char;
+    if (token.test(name)) {
+      assert.strictEqual(format({ type: name }), name);
+      assert.strictEqual(
+        format({ type: 'attachment', parameters: { [name]: 'x' } }),
+        'attachment; ' + name + '=x',
+      );
+    } else {
+      assert.throws(() => format({ type: name }), /Invalid type/);
+      assert.throws(
+        () => format({ type: 'attachment', parameters: { [name]: 'x' } }),
+        /Invalid parameter name/,
+      );
+    }
+  }
 });
