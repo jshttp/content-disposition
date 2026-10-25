@@ -79,6 +79,17 @@ describe('format(obj)', function () {
     );
   });
 
+  it('should ignore inherited extended parameters', function () {
+    const parameters = Object.assign(
+      Object.create({ 'filename*': "UTF-8''inherited.pdf" }),
+      { filename: '€ rates.pdf' },
+    );
+    assert.strictEqual(
+      format({ type: 'attachment', parameters }),
+      "attachment; filename*=UTF-8''%E2%82%AC%20rates.pdf",
+    );
+  });
+
   it('should not repeat an extended parameter listed before its value', function () {
     assert.strictEqual(
       format({
