@@ -413,7 +413,10 @@ export function format(
       }
 
       // When `param` and `param*` are provided, prefer the already extended form.
-      if (parameters[param + '*'] !== undefined) {
+      if (
+        Object.hasOwn(parameters, param + '*') &&
+        parameters[param + '*'] !== undefined
+      ) {
         continue;
       }
 
