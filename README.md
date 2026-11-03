@@ -30,13 +30,17 @@ want to specify `options`, set `filename` to `undefined`.
 res.setHeader('Content-Disposition', create('∫ maths.pdf'));
 ```
 
+**note** The `filename` is used as given; it is not reduced to its base name.
+Pass only the file name (e.g. using `path.basename`) rather than a full path,
+otherwise the path is sent to the client and exposes your directory structure.
+
 **note** HTTP headers are of the ISO-8859-1 character set. If you are writing this
 header through a means different from `setHeader` in Node.js, you'll want to specify
 the `'binary'` encoding in Node.js.
 
 #### Options
 
-`contentDisposition` accepts these properties in the options object.
+`create` accepts these properties in the options object.
 
 ##### fallback
 
@@ -144,6 +148,7 @@ e.g. `filename*=`, defaults to `true`.
 ```js
 import fs from 'node:fs';
 import http from 'node:http';
+import path from 'node:path';
 import { create } from 'content-disposition';
 import onFinished from 'on-finished';
 
@@ -152,7 +157,7 @@ const filePath = '/path/to/public/plans.pdf';
 http.createServer(function onRequest(req, res) {
   // set headers
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', create(filePath));
+  res.setHeader('Content-Disposition', create(path.basename(filePath)));
 
   // send file
   const stream = fs.createReadStream(filePath);
