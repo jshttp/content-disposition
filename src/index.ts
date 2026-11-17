@@ -468,7 +468,10 @@ export function format(
   let result = type;
 
   if (parameters) {
-    for (const param of Object.keys(parameters)) {
+    const names = Object.keys(parameters);
+    let normalizedNames: Set<string> | undefined;
+
+    for (const param of names) {
       const value = parameters[param];
 
       if (!isTokenValid(param)) {
@@ -497,6 +500,12 @@ export function format(
 
       // When `param` and `param*` are provided, prefer the already extended form.
       if (parameters[param + '*'] !== undefined) {
+        continue;
+      }
+
+      // Parameter names are case-insensitive, but preserve their output casing.
+      normalizedNames ??= new Set(names.map((name) => name.toLowerCase()));
+      if (normalizedNames.has(param.toLowerCase() + '*')) {
         continue;
       }
 

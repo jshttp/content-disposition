@@ -100,6 +100,89 @@ describe('format(obj)', function () {
     );
   });
 
+  it('should prefer an explicit extended parameter regardless of name casing', function () {
+    for (const [plain, encoded] of [
+      ['Filename', 'filename*'],
+      ['filename', 'FILENAME*'],
+      ['FileName', 'fIlEnAmE*'],
+    ]) {
+      for (const entries of [
+        [
+          [plain, '€ rates.pdf'],
+          [encoded, "UTF-8''explicit.pdf"],
+        ],
+        [
+          [encoded, "UTF-8''explicit.pdf"],
+          [plain, '€ rates.pdf'],
+        ],
+      ]) {
+        const header = format({
+          type: 'attachment',
+          parameters: Object.fromEntries(entries),
+        });
+        assert.strictEqual(
+          header,
+          'attachment; ' + encoded + "=UTF-8''explicit.pdf",
+        );
+        assert.strictEqual(parse(header).parameters.filename, 'explicit.pdf');
+      }
+    }
+  });
+
+  it('should match extended names independently for multiple Unicode parameters', function () {
+    const header = format({
+      type: 'attachment',
+      parameters: {
+        Filename: '€ rates.pdf',
+        Title: '日本語',
+        'FILENAME*': "UTF-8''explicit.pdf",
+        'TITLE*': "UTF-8''explicit",
+      },
+    });
+    assert.strictEqual(
+      header,
+      "attachment; FILENAME*=UTF-8''explicit.pdf; TITLE*=UTF-8''explicit",
+    );
+    assert.strictEqual(parse(header).parameters.filename, 'explicit.pdf');
+    assert.strictEqual(parse(header).parameters.title, 'explicit');
+  });
+
+  it('should keep Latin-1 fallback parameters with differently cased extended names', function () {
+    assert.strictEqual(
+      format({
+        type: 'attachment',
+        parameters: {
+          Filename: '£ rates.pdf',
+          'FILENAME*': "UTF-8''explicit.pdf",
+        },
+      }),
+      'attachment; Filename="£ rates.pdf"; FILENAME*=UTF-8\'\'explicit.pdf',
+    );
+  });
+
+  it('should still encode Unicode when only an unrelated extended parameter is present', function () {
+    assert.strictEqual(
+      format({
+        type: 'attachment',
+        parameters: { Filename: '€ rates.pdf', 'other*': "UTF-8''other.pdf" },
+      }),
+      "attachment; Filename*=UTF-8''%E2%82%AC%20rates.pdf; other*=UTF-8''other.pdf",
+    );
+  });
+
+  it('should keep multipart parameters when extended names differ in casing', function () {
+    assert.strictEqual(
+      format(
+        {
+          type: 'form-data',
+          parameters: { Filename: '€ rates.pdf', 'FILENAME*': 'explicit.pdf' },
+        },
+        { multipart: true },
+      ),
+      'form-data; Filename="€ rates.pdf"; FILENAME*="explicit.pdf"',
+    );
+  });
+
   it('should format the result of parse without repeating a parameter', function () {
     assert.strictEqual(
       format(
