@@ -2,6 +2,81 @@ import { describe, it, assert } from 'vitest';
 import { parse, format } from './index.js';
 
 describe('parse(string)', function () {
+  describe('with duplicate parameters', function () {
+    describe.each([false, true])('with multipart: %s', function (multipart) {
+      it.each([
+        ['"first%22.txt"', '"second.txt"'],
+        ['"first%22.txt"', 'second.txt'],
+        ['first.txt', '"second%22.txt"'],
+      ])('should keep %s before duplicate %s', function (first, second) {
+        assert.deepEqual(
+          parse(`attachment; filename=${first}; FILENAME=${second}`, {
+            multipart,
+          }),
+          {
+            type: 'attachment',
+            parameters: {
+              filename:
+                first === 'first.txt'
+                  ? 'first.txt'
+                  : multipart
+                    ? 'first".txt'
+                    : 'first%22.txt',
+            },
+          },
+        );
+      });
+
+      it.each(['', '""'])(
+        'should preserve an empty first value (%s)',
+        function (first) {
+          assert.deepEqual(
+            parse(`attachment; filename=${first}; filename=second`, {
+              multipart,
+            }),
+            {
+              type: 'attachment',
+              parameters: { filename: '' },
+            },
+          );
+        },
+      );
+
+      it('should parse a distinct parameter after a quoted duplicate containing a semicolon', function () {
+        assert.deepEqual(
+          parse(
+            'attachment; filename=first; filename="second;hidden=value"; name=last',
+            { multipart },
+          ),
+          {
+            type: 'attachment',
+            parameters: { filename: 'first', name: 'last' },
+          },
+        );
+      });
+    });
+
+    it.each([
+      ["UTF-8''first", "UTF-8''second", "UTF-8''first"],
+      ['"first"', "UTF-8''second", 'first'],
+      ["UTF-8''first", '"second"', "UTF-8''first"],
+      ['"first"', '"second"', 'first'],
+    ])(
+      'should keep %s before extended duplicate %s with decoding disabled',
+      function (first, second, expected) {
+        assert.deepEqual(
+          parse(`attachment; filename*= ${first}; FILENAME*=${second}`, {
+            extended: false,
+          }),
+          {
+            type: 'attachment',
+            parameters: { 'filename*': expected },
+          },
+        );
+      },
+    );
+  });
+
   describe('with only type', function () {
     it('should ignore leading spaces and tabs', function () {
       assert.deepEqual(parse(' \t attachment'), {
@@ -206,7 +281,6 @@ describe('parse(string)', function () {
           type: 'attachment',
           parameters: {
             filename: '€ rates.pdf',
-            'filename*': "UTF-8''%E2%82%AC%20rates.pdf",
           },
         },
       );
@@ -219,7 +293,6 @@ describe('parse(string)', function () {
           type: 'attachment',
           parameters: {
             filename: '€ rates.pdf',
-            'filename*': "utf8''%E2%82%AC%20rates.pdf",
           },
         },
       );
@@ -232,7 +305,6 @@ describe('parse(string)', function () {
           type: 'attachment',
           parameters: {
             filename: '€ rates.pdf',
-            'filename*': "UTF-8''%E2%82%AC%20rates.pdf",
           },
         },
       );
@@ -252,7 +324,6 @@ describe('parse(string)', function () {
           type: 'attachment',
           parameters: {
             filename: '£ rates.pdf',
-            'filename*': "ISO-8859-1''%A3%20rates.pdf",
           },
         },
       );
@@ -265,7 +336,6 @@ describe('parse(string)', function () {
           type: 'attachment',
           parameters: {
             filename: '\x82 rates.pdf',
-            'filename*': "ISO-8859-1''%82%20rates.pdf",
           },
         },
       );
@@ -276,7 +346,6 @@ describe('parse(string)', function () {
         type: 'attachment',
         parameters: {
           filename: 'ABC.pdf',
-          'filename*': "ISO-8859-1''ABC.pdf",
         },
       });
     });
@@ -315,7 +384,6 @@ describe('parse(string)', function () {
           type: 'attachment',
           parameters: {
             filename: '€ rates.pdf',
-            'filename*': "utf-8''%E2%82%AC%20rates.pdf",
           },
         },
       );
@@ -338,38 +406,57 @@ describe('parse(string)', function () {
           type: 'attachment',
           parameters: {
             filename: '€ rates.pdf',
-            'filename*': "UTF-8'en'%E2%82%AC%20rates.pdf",
           },
         },
       );
     });
 
-    it('should prefer extended parameter value', function () {
-      assert.deepEqual(
-        parse(
-          'attachment; filename="EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf',
-        ),
-        {
+    it.each([
+      ["filename=fallback; filename*=UTF-8''preferred", 'preferred'],
+      ["filename*=UTF-8''preferred; filename=fallback", 'preferred'],
+      [
+        "filename=fallback; filename*=UTF-8''preferred; filename=last",
+        'preferred',
+      ],
+      [
+        'filename=fallback; filename*=UTF-8\'\'preferred; filename="last"',
+        'preferred',
+      ],
+      ['filename="fallback"; filename*=UTF-8\'\'preferred', 'preferred'],
+      ['filename*=UTF-8\'\'preferred; filename="fallback"', 'preferred'],
+      [
+        'filename="fallback"; filename*=UTF-8\'\'preferred; filename=last',
+        'preferred',
+      ],
+      [
+        'filename="fallback"; filename*=UTF-8\'\'preferred; filename="last"',
+        'preferred',
+      ],
+      [
+        'filename="EURO rates.pdf"; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf',
+        '€ rates.pdf',
+      ],
+      [
+        'filename*=UTF-8\'\'%E2%82%AC%20rates.pdf; filename="EURO rates.pdf"',
+        '€ rates.pdf',
+      ],
+      [
+        'filename="foo-ae.html"; filename*=UTF-8\'\'foo-%c3%a4.html',
+        'foo-ä.html',
+      ],
+      [
+        'filename*=UTF-8\'\'foo-%c3%a4.html; filename="foo-ae.html"',
+        'foo-ä.html',
+      ],
+    ])(
+      'should prefer the extended filename in %s',
+      function (params, filename) {
+        assert.deepEqual(parse(`attachment; ${params}`), {
           type: 'attachment',
-          parameters: {
-            filename: '€ rates.pdf',
-            'filename*': "UTF-8''%E2%82%AC%20rates.pdf",
-          },
-        },
-      );
-      assert.deepEqual(
-        parse(
-          'attachment; filename*=UTF-8\'\'%E2%82%AC%20rates.pdf; filename="EURO rates.pdf"',
-        ),
-        {
-          type: 'attachment',
-          parameters: {
-            filename: '€ rates.pdf',
-            'filename*': "UTF-8''%E2%82%AC%20rates.pdf",
-          },
-        },
-      );
-    });
+          parameters: { filename },
+        });
+      },
+    );
 
     it('should keep the first duplicate extended filename', function () {
       assert.deepEqual(
@@ -380,8 +467,61 @@ describe('parse(string)', function () {
           type: 'attachment',
           parameters: {
             filename: 'first.html',
-            'filename*': "UTF-8''first.html",
           },
+        },
+      );
+    });
+
+    it('should not treat a normalized extended key as a duplicate input key', function () {
+      assert.deepEqual(
+        parse(
+          "attachment; filename**=UTF-8''first.html; filename*=UTF-8''second.html",
+        ),
+        {
+          type: 'attachment',
+          parameters: {
+            'filename*': 'first.html',
+            filename: 'second.html',
+          },
+        },
+      );
+    });
+
+    it.each(['fallback', '"fallback"'])(
+      'should preserve a normalized extended value before an undecodable value (%s)',
+      function (fallback) {
+        assert.deepEqual(
+          parse(
+            `attachment; filename**=UTF-8''preferred; filename*=${fallback}`,
+          ),
+          {
+            type: 'attachment',
+            parameters: { 'filename*': 'preferred' },
+          },
+        );
+      },
+    );
+
+    it('should ignore an unquoted extended duplicate after a quoted value', function () {
+      assert.deepEqual(
+        parse(
+          'attachment; filename*="first.html"; FILENAME*=UTF-8\'\'second.html',
+        ),
+        {
+          type: 'attachment',
+          parameters: { 'filename*': 'first.html' },
+        },
+      );
+    });
+
+    it('should ignore a quoted extended duplicate after an unquoted value', function () {
+      assert.deepEqual(
+        parse(
+          'attachment; filename*=UTF-8\'\'first.html; FILENAME*="second.html"',
+        ),
+        {
+          type: 'attachment',
+          parameters: { filename: 'first.html' },
         },
       );
     });
@@ -915,7 +1055,6 @@ describe('parse(string)', function () {
             type: 'attachment',
             parameters: {
               filename: 'foo-ä.html',
-              'filename*': "iso-8859-1''foo-%E4.html",
             },
           },
         );
@@ -928,7 +1067,6 @@ describe('parse(string)', function () {
             type: 'attachment',
             parameters: {
               filename: 'foo-ä-€.html',
-              'filename*': "UTF-8''foo-%c3%a4-%e2%82%ac.html",
             },
           },
         );
@@ -951,7 +1089,6 @@ describe('parse(string)', function () {
             type: 'attachment',
             parameters: {
               filename: 'foo-ä.html',
-              'filename*': "UTF-8''foo-a%cc%88.html",
             },
           },
         );
@@ -964,7 +1101,6 @@ describe('parse(string)', function () {
             type: 'attachment',
             parameters: {
               filename: 'foo-Ã¤-â\x82¬.html',
-              'filename*': "iso-8859-1''foo-%c3%a4-%e2%82%ac.html",
             },
           },
         );
@@ -977,7 +1113,6 @@ describe('parse(string)', function () {
             type: 'attachment',
             parameters: {
               'filename ': 'foo-ä.html',
-              'filename *': "UTF-8''foo-%c3%a4.html",
             },
           },
         );
@@ -990,7 +1125,6 @@ describe('parse(string)', function () {
             type: 'attachment',
             parameters: {
               filename: 'foo-ä.html',
-              'filename*': "UTF-8''foo-%c3%a4.html",
             },
           },
         );
@@ -1003,7 +1137,6 @@ describe('parse(string)', function () {
             type: 'attachment',
             parameters: {
               filename: 'foo-ä.html',
-              'filename*': "UTF-8''foo-%c3%a4.html",
             },
           },
         );
@@ -1052,7 +1185,6 @@ describe('parse(string)', function () {
           type: 'attachment',
           parameters: {
             filename: 'A-%41.html',
-            'filename*': "UTF-8''A-%2541.html",
           },
         });
       });
@@ -1062,7 +1194,6 @@ describe('parse(string)', function () {
           type: 'attachment',
           parameters: {
             filename: '\\foo.html',
-            'filename*': "UTF-8''%5cfoo.html",
           },
         });
       });
@@ -1098,7 +1229,6 @@ describe('parse(string)', function () {
             type: 'attachment',
             parameters: {
               'filename*0': 'foo-ä',
-              'filename*0*': "UTF-8''foo-%c3%a4",
               'filename*1': '.html',
             },
           },
@@ -1147,36 +1277,6 @@ describe('parse(string)', function () {
     });
 
     describe('RFC2231 Encoding: Fallback Behaviour', function () {
-      it('should parse "attachment; filename="foo-ae.html"; filename*=UTF-8\'\'foo-%c3%a4.html"', function () {
-        assert.deepEqual(
-          parse(
-            'attachment; filename="foo-ae.html"; filename*=UTF-8\'\'foo-%c3%a4.html',
-          ),
-          {
-            type: 'attachment',
-            parameters: {
-              filename: 'foo-ä.html',
-              'filename*': "UTF-8''foo-%c3%a4.html",
-            },
-          },
-        );
-      });
-
-      it('should parse "attachment; filename*=UTF-8\'\'foo-%c3%a4.html; filename="foo-ae.html"', function () {
-        assert.deepEqual(
-          parse(
-            'attachment; filename*=UTF-8\'\'foo-%c3%a4.html; filename="foo-ae.html"',
-          ),
-          {
-            type: 'attachment',
-            parameters: {
-              filename: 'foo-ä.html',
-              'filename*': "UTF-8''foo-%c3%a4.html",
-            },
-          },
-        );
-      });
-
       it("should parse \"attachment; filename*0*=ISO-8859-15''euro-sign%3d%a4; filename*=ISO-8859-1''currency-sign%3d%a4", function () {
         assert.deepEqual(
           parse(
@@ -1186,7 +1286,6 @@ describe('parse(string)', function () {
             type: 'attachment',
             parameters: {
               filename: 'currency-sign=¤',
-              'filename*': "ISO-8859-1''currency-sign%3d%a4",
               'filename*0*': "ISO-8859-15''euro-sign%3d%a4",
             },
           },
@@ -1337,9 +1436,7 @@ describe('parse(string, options)', function () {
           type: 'form-data',
           parameters: {
             name: 'foo\nbar',
-            'name*': "UTF-8''foo%0Abar",
             filename: '"foo\rbar".txt',
-            'filename*': "UTF-8''%22foo%0Dbar%22.txt",
           },
         },
       );

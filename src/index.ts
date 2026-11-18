@@ -150,6 +150,7 @@ export function parse(
   const type =
     (typeFlags & CASE_FLAGS) === 0 ? typeValue : typeValue.toLowerCase();
   const parameters: Record<string, string> = new NullObject();
+  const seenKeys: Record<string, boolean> = new NullObject();
 
   parameter: while (index < len) {
     index++; // Skip over semicolon.
@@ -184,7 +185,7 @@ export function parse(
           while (index < len) {
             const code = header.charCodeAt(index);
             if (code === DQUOTE) {
-              if (parameters[key] === undefined) {
+              if (parameters[key] === undefined && !seenKeys[key]) {
                 parameters[key] = encoded
                   ? multipart
                     ? decodeMultipartEscapes(header, quotedStart, index)
@@ -199,6 +200,7 @@ export function parse(
                 }
                 index++;
               }
+              seenKeys[key] = true;
               continue parameter;
             }
 
@@ -220,12 +222,17 @@ export function parse(
             index++;
           }
 
+          seenKeys[key] = true;
           continue parameter;
         }
 
         const valueStart = index;
         const delimiter = header.indexOf(';', index);
         index = delimiter === -1 ? len : delimiter;
+
+        if (seenKeys[key]) continue parameter;
+        seenKeys[key] = true;
+
         let valueEnd = index;
         while (
           valueEnd > valueStart &&
@@ -235,16 +242,16 @@ export function parse(
         }
         const value = header.slice(valueStart, valueEnd);
 
-        if (parameters[key] === undefined) {
-          parameters[key] = value;
-
-          if (extended && key.charCodeAt(key.length - 1) === ASTERISK) {
-            const normalizedKey = key.slice(0, -1);
-            const decoded = decodeExtended(value);
-            if (decoded !== undefined) parameters[normalizedKey] = decoded;
+        if (extended && key.charCodeAt(key.length - 1) === ASTERISK) {
+          const normalizedKey = key.slice(0, -1);
+          const decoded = decodeExtended(value);
+          if (decoded !== undefined) {
+            parameters[normalizedKey] = decoded;
+            continue parameter;
           }
         }
 
+        if (parameters[key] === undefined) parameters[key] = value;
         continue parameter;
       }
 
@@ -493,11 +500,6 @@ export function format(
       // Reject parameter names that indicate they are already extended.
       if (param.charCodeAt(param.length - 1) === ASTERISK) {
         throw new TypeError('Invalid extended parameter value: ' + value);
-      }
-
-      // When `param` and `param*` are provided, prefer the already extended form.
-      if (parameters[param + '*'] !== undefined) {
-        continue;
       }
 
       result += '; ' + param + '*=' + encodeExtended(value);

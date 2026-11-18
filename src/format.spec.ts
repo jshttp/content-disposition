@@ -74,31 +74,51 @@ describe('format(obj)', function () {
     );
   });
 
-  it('should not repeat an extended parameter that is already present', function () {
-    assert.strictEqual(
-      format({
-        type: 'attachment',
-        parameters: {
-          filename: '€ rates.pdf',
-          'filename*': "UTF-8''%E2%82%AC%20rates.pdf",
-        },
-      }),
-      "attachment; filename*=UTF-8''%E2%82%AC%20rates.pdf",
-    );
-  });
+  it.each([
+    {
+      parameters: {
+        filename: '€ rates.pdf',
+        'filename*': "UTF-8''explicit.pdf",
+      },
+      expected:
+        "attachment; filename*=UTF-8''%E2%82%AC%20rates.pdf; filename*=UTF-8''explicit.pdf",
+    },
+    {
+      parameters: {
+        'filename*': "UTF-8''explicit.pdf",
+        filename: '€ rates.pdf',
+      },
+      expected:
+        "attachment; filename*=UTF-8''explicit.pdf; filename*=UTF-8''%E2%82%AC%20rates.pdf",
+    },
+  ])(
+    'should emit provided and generated extended parameters in order: $expected',
+    function ({ parameters, expected }) {
+      assert.strictEqual(format({ type: 'attachment', parameters }), expected);
+    },
+  );
 
-  it('should not repeat an extended parameter listed before its value', function () {
-    assert.strictEqual(
-      format({
-        type: 'attachment',
-        parameters: {
-          'filename*': "UTF-8''%E2%82%AC%20rates.pdf",
-          filename: '€ rates.pdf',
-        },
-      }),
-      "attachment; filename*=UTF-8''%E2%82%AC%20rates.pdf",
-    );
-  });
+  it.each([
+    { options: {}, expected: 'attachment; filename=first; FILENAME=second' },
+    {
+      options: { multipart: true },
+      expected: 'attachment; filename="first"; FILENAME="second"',
+    },
+  ])(
+    'should emit provided case-insensitive duplicates: $expected',
+    function ({ options, expected }) {
+      assert.strictEqual(
+        format(
+          {
+            type: 'attachment',
+            parameters: { filename: 'first', FILENAME: 'second' },
+          },
+          options,
+        ),
+        expected,
+      );
+    },
+  );
 
   it('should format the result of parse without repeating a parameter', function () {
     assert.strictEqual(
