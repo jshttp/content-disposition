@@ -1,6 +1,6 @@
 {
   "name": "content-disposition",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Create and parse Content-Disposition header",
   "keywords": [
     "content-disposition",
