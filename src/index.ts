@@ -243,11 +243,13 @@ export function parse(
         const value = header.slice(valueStart, valueEnd);
 
         if (extended && key.charCodeAt(key.length - 1) === ASTERISK) {
-          const normalizedKey = key.slice(0, -1);
-          const decoded = decodeExtended(value);
-          if (decoded !== undefined) {
-            parameters[normalizedKey] = decoded;
-            continue parameter;
+          if (!CONTINUATION_REGEXP.test(key)) {
+            const normalizedKey = key.slice(0, -1);
+            const decoded = decodeExtended(value);
+            if (decoded !== undefined) {
+              parameters[normalizedKey] = decoded;
+              continue parameter;
+            }
           }
         }
 
@@ -266,7 +268,56 @@ export function parse(
     }
   }
 
+  if (extended) decodeContinuations(parameters);
+
   return { type, parameters };
+}
+
+const CONTINUATION_REGEXP = /^([^*]+)\*(\d+)(\*?)$/;
+function decodeContinuations(parameters: Record<string, string>): void {
+  const continuations: Record<string, [string, number, boolean, string][]> = {};
+
+  for (const key of Object.keys(parameters)) {
+    const match = CONTINUATION_REGEXP.exec(key);
+    if (!match) continue;
+    const [, base, index, asterisk] = match;
+    (continuations[base] ||= []).push([
+      key,
+      Number(index),
+      asterisk === '*',
+      parameters[key],
+    ]);
+  }
+
+  for (const base of Object.keys(continuations)) {
+    const sections = continuations[base];
+    const sectionsByIndex = new Map<
+      number,
+      [string, number, boolean, string]
+    >();
+    for (const section of sections) {
+      const key = section[0];
+      const digits = key.slice(
+        base.length + 1,
+        key.length - (section[2] ? 1 : 0),
+      );
+      if (digits === '0' || !digits.startsWith('0')) {
+        sectionsByIndex.set(section[1], section);
+      }
+    }
+
+    const combined: [string, number, boolean, string][] = [];
+    for (let index = 0; sectionsByIndex.has(index); index++) {
+      combined.push(sectionsByIndex.get(index)!);
+    }
+
+    for (const section of sections) delete parameters[section[0]];
+    if (combined.length === 0 || parameters[base] !== undefined) continue;
+
+    const value = combined.map((section) => section[3]).join('');
+    const decoded = combined[0][2] ? decodeExtended(value) : value;
+    if (decoded !== undefined) parameters[base] = decoded;
+  }
 }
 
 /**
