@@ -274,6 +274,40 @@ describe('parse(string)', function () {
       );
     });
 
+    it('should parse RFC 8187 continuation parameters', function () {
+      assert.deepEqual(
+        parse('attachment; filename*0="foo."; filename*1="html"'),
+        {
+          type: 'attachment',
+          parameters: { filename: 'foo.html' },
+        },
+      );
+    });
+
+    it('should decode encoded RFC 8187 continuation parameters', function () {
+      assert.deepEqual(
+        parse(
+          "attachment; filename*0*=UTF-8''foo-%c3%a4; filename*1*=%22bar%22.html",
+        ),
+        {
+          type: 'attachment',
+          parameters: { filename: 'foo-ä"bar".html' },
+        },
+      );
+    });
+
+    it('should prefer non-continued extended parameters over continuations', function () {
+      assert.deepEqual(
+        parse(
+          "attachment; filename*=UTF-8''preferred.pdf; filename*0*=UTF-8''ignored.; filename*1*=pdf",
+        ),
+        {
+          type: 'attachment',
+          parameters: { filename: 'preferred.pdf' },
+        },
+      );
+    });
+
     it('should parse UTF-8 extended parameter value', function () {
       assert.deepEqual(
         parse("attachment; filename*=UTF-8''%E2%82%AC%20rates.pdf"),
@@ -1205,7 +1239,7 @@ describe('parse(string)', function () {
           parse('attachment; filename*0="foo."; filename*1="html"'),
           {
             type: 'attachment',
-            parameters: { 'filename*0': 'foo.', 'filename*1': 'html' },
+            parameters: { filename: 'foo.html' },
           },
         );
       });
@@ -1215,7 +1249,7 @@ describe('parse(string)', function () {
           parse('attachment; filename*0="foo"; filename*1="\\b\\a\\r.html"'),
           {
             type: 'attachment',
-            parameters: { 'filename*0': 'foo', 'filename*1': 'bar.html' },
+            parameters: { filename: 'foobar.html' },
           },
         );
       });
@@ -1227,10 +1261,7 @@ describe('parse(string)', function () {
           ),
           {
             type: 'attachment',
-            parameters: {
-              'filename*0': 'foo-ä',
-              'filename*1': '.html',
-            },
+            parameters: { filename: 'foo-ä.html' },
           },
         );
       });
@@ -1240,7 +1271,7 @@ describe('parse(string)', function () {
           parse('attachment; filename*0="foo"; filename*01="bar"'),
           {
             type: 'attachment',
-            parameters: { 'filename*0': 'foo', 'filename*01': 'bar' },
+            parameters: { filename: 'foo' },
           },
         );
       });
@@ -1250,7 +1281,7 @@ describe('parse(string)', function () {
           parse('attachment; filename*0="foo"; filename*2="bar"'),
           {
             type: 'attachment',
-            parameters: { 'filename*0': 'foo', 'filename*2': 'bar' },
+            parameters: { filename: 'foo' },
           },
         );
       });
@@ -1260,7 +1291,7 @@ describe('parse(string)', function () {
           parse('attachment; filename*1="foo."; filename*2="html"'),
           {
             type: 'attachment',
-            parameters: { 'filename*1': 'foo.', 'filename*2': 'html' },
+            parameters: {},
           },
         );
       });
@@ -1270,7 +1301,7 @@ describe('parse(string)', function () {
           parse('attachment; filename*1="bar"; filename*0="foo"'),
           {
             type: 'attachment',
-            parameters: { 'filename*1': 'bar', 'filename*0': 'foo' },
+            parameters: { filename: 'foobar' },
           },
         );
       });
@@ -1286,7 +1317,6 @@ describe('parse(string)', function () {
             type: 'attachment',
             parameters: {
               filename: 'currency-sign=¤',
-              'filename*0*': "ISO-8859-15''euro-sign%3d%a4",
             },
           },
         );
